@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — TravelBeey</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="auth-page">
+<div id="site-preloader" aria-hidden="true">
+  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
+  <div class="pl-bar"></div>
+  <div class="pl-pct">FINDING YOUR HIVE…</div>
+</div>
+<nav id="navbar"><div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>🐝</span> Travel<em>Beey</em></a></div></nav>
+<div class="auth-wrap" data-parallax-layer>
+  <div class="auth-orb auth-orb-1 parallax-float" data-depth="18"></div>
+  <div class="auth-orb auth-orb-2 parallax-float" data-depth="-14"></div>
+  <div class="auth-card" data-tilt data-tilt-strength="4">
+    <h2>Join TravelBeey</h2>
+    <p class="auth-sub">Create your free account</p>
+    <form id="register-form">
+      <div class="mrow"><div class="field"><label>Full Name</label><input type="text" name="name" required placeholder="Your name"></div><div class="field"><label>Phone</label><input type="tel" name="phone" placeholder="+91 98765 43210"></div></div>
+      <div class="field"><label>Email</label><input type="email" name="email" required placeholder="your@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" name="password" required placeholder="Min. 6 characters"></div>
+      <div id="auth-error" class="auth-error" style="display:none"></div>
+      <button type="submit" class="btn-submit" id="register-btn">Create Account</button>
+    </form>
+    <p class="auth-switch">Already have an account? <a href="/login">Log in</a></p>
+  </div>
+  <div class="auth-hero">
+    <div class="auth-hero-inner">
+      <div class="auth-hero-icon parallax-float" data-depth="10">🏔️</div>
+      <h3>The world is waiting</h3>
+      <p>Sign up in seconds. No credit card required to browse our 350+ packages.</p>
+    </div>
+  </div>
+</div>
+<script src="/js/anim.js" defer></script>
+<script src="/js/auth.js"></script>
+</body>
+</html>

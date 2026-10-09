@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — TravelBeey</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="dash-page">
+<div id="site-preloader" aria-hidden="true">
+  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
+  <div class="pl-bar"></div>
+  <div class="pl-pct">FINDING YOUR HIVE…</div>
+</div>
+<nav id="navbar">
+  <div class="logo"><span>🐝</span> Travel<em>Beey</em> <span class="admin-badge">ADMIN</span></div>
+  <div class="nav-actions"><span id="admin-name" style="color:rgba(255,255,255,.7);font-size:.875rem"></span><button onclick="logout()" class="btn-ghost">Logout</button></div>
+</nav>
+<div class="dash-layout">
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <a href="#" class="snav active" data-tab="overview">📊 Overview</a>
+      <a href="#" class="snav" data-tab="bookings">📋 Bookings</a>
+      <a href="#" class="snav" data-tab="users">👥 Users</a>
+      <a href="#" class="snav" data-tab="packages">📦 Packages</a>
+      <a href="#" class="snav" data-tab="destinations">🗺️ Destinations</a>
+      <a href="/" class="snav">🏠 View Site</a>
+    </nav>
+  </aside>
+  <main class="dash-main">
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="panel-header"><h2>Dashboard Overview</h2><p>Real-time snapshot of TravelBeey</p></div>
+      <div class="stats-cards reveal-stagger" id="stat-cards">
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">📋</div><div class="sc-val" id="sc-total">—</div><div class="sc-label">Total Bookings</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">⏳</div><div class="sc-val" id="sc-pending">—</div><div class="sc-label">Pending</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">✅</div><div class="sc-val" id="sc-confirmed">—</div><div class="sc-label">Confirmed</div></div>
+        <div class="stat-card gold" data-tilt data-tilt-strength="10"><div class="sc-icon">💰</div><div class="sc-val" id="sc-revenue">—</div><div class="sc-label">Revenue (confirmed)</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">👥</div><div class="sc-val" id="sc-users">—</div><div class="sc-label">Registered Users</div></div>
+      </div>
+      <div class="two-col reveal-stagger">
+        <div class="panel-box" data-tilt data-tilt-strength="3"><h3>Recent Bookings</h3><div id="recent-bookings"></div></div>
+        <div class="panel-box" data-tilt data-tilt-strength="3"><h3>Top Destinations</h3><div id="top-dest"></div></div>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div class="tab-panel" id="tab-bookings">
+      <div class="panel-header">
+        <h2>All Bookings</h2>
+        <div class="filter-bar">
+          <input type="text" id="bk-search" placeholder="Search name, ref, destination…" oninput="loadAdminBookings()">
+          <select id="bk-status" onchange="loadAdminBookings()">
+            <option value="">All Status</option>
+            <option>pending</option><option>confirmed</option><option>cancelled</option><option>completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="data-table" id="bookings-table">
+        <thead><tr><th>Ref</th><th>Guest</th><th>Destination</th><th>Package</th><th>Date</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="bookings-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-panel" id="tab-users">
+      <div class="panel-header"><h2>Users</h2></div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="users-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- PACKAGES -->
+    <div class="tab-panel" id="tab-packages">
+      <div class="panel-header"><h2>Packages</h2><button class="btn-primary" onclick="showAddPkg()">+ Add Package</button></div>
+      <div class="pkg-admin-grid" id="pkg-admin-grid"></div>
+    </div>
+
+    <!-- DESTINATIONS -->
+    <div class="tab-panel" id="tab-destinations">
+      <div class="panel-header"><h2>Destinations</h2><button class="btn-primary" onclick="showAddDest()">+ Add Destination</button></div>
+      <p style="color:var(--muted);font-size:.85rem;margin:-10px 0 18px">These are the cards shown under "Trending Destinations" on the homepage, and power each destination's explore page.</p>
+      <div class="pkg-admin-grid" id="dest-admin-grid"></div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="pkg-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('pkg-modal').classList.remove('open')">✕</button>
+    <h3 id="pkg-modal-title">Add Package</h3>
+    <form id="pkg-form">
+      <input type="hidden" name="id">
+      <div class="mrow"><div class="field"><label>Name</label><input type="text" name="name" required></div><div class="field"><label>Tier</label><select name="tier"><option value="starter">Starter</option><option value="premium">Premium</option><option value="adventure">Adventure</option></select></div></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+      <div class="mrow"><div class="field"><label>Price (₹)</label><input type="number" name="price" required></div><div class="field"><label>Duration</label><input type="text" name="duration" placeholder="7-10 Days"></div></div>
+      <div class="field"><label>Includes (comma-separated)</label><input type="text" name="includes" placeholder="Flights,Hotel,Transfers"></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="hidden" name="image_file">
+        <div class="dz" id="pkg-dropzone">
+          <div class="dz-preview" id="pkg-dz-preview" style="display:none">
+            <img id="pkg-dz-img" alt="">
+            <button type="button" class="dz-remove" id="pkg-dz-remove">✕ Remove</button>
+          </div>
+          <div class="dz-empty" id="pkg-dz-empty">
+            <div class="dz-icon">📷</div>
+            <p><strong>Drag & drop</strong> a photo here, or <span class="dz-browse">click to browse</span></p>
+            <p class="dz-hint">JPG, PNG or WEBP · up to 8MB</p>
+          </div>
+          <input type="file" id="pkg-dz-input" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+        </div>
+        <p id="pkg-dz-status" style="font-size:.72rem;color:var(--muted);margin:6px 0 0"></p>
+      </div>
+      <div class="field"><label>Highlights (one per line — shown as "Tour Highlights" on the package page)</label><textarea name="highlights_lines" rows="4" placeholder="Guided city tour with a local expert&#10;3-star centrally located hotel&#10;Airport pickup & drop included"></textarea></div>
+      <div class="mrow"><div class="field"><label>Best Time to Go</label><input type="text" name="best_time" placeholder="Oct – Mar"></div><div class="field"><label>Map Location</label><input type="text" name="map_query" placeholder="Puri, Odisha, India"></div></div>
+      <p style="font-size:.72rem;color:var(--muted);margin:-8px 0 12px">Map Location is a free-text place name — it's used to embed a Google Map on the package page, no coordinates needed.</p>
+      <div class="field"><label>Day-by-Day Itinerary (one day per line — format: <code>Day title :: description</code>)</label><textarea name="itinerary_lines" rows="6" placeholder="Day 1: Arrival :: Land, transfer to your hotel and settle in.&#10;Day 2: Guided City Tour :: Full-day guided tour of the city's highlights.&#10;Day 3: Free Day :: A day at your own pace.&#10;Day 4: Departure :: Check out and transfer to the airport."></textarea></div>
+      <p style="font-size:.72rem;color:var(--muted);margin:-8px 0 12px">This becomes the "Tour Itinerary" accordion on the package's own detail page — shown day by day, exactly as entered here.</p>
+      <button type="submit" class="btn-submit">Save Package</button>
+    </form>
+  </div>
+</div>
+<div class="modal-overlay" id="dest-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('dest-modal').classList.remove('open')">✕</button>
+    <h3 id="dest-modal-title">Add Destination</h3>
+    <form id="dest-form">
+      <input type="hidden" name="id">
+      <div class="mrow"><div class="field"><label>Name</label><input type="text" name="name" required placeholder="Munnar"></div><div class="field"><label>State</label><input type="text" name="country" required placeholder="Kerala" list="state-list"></div></div>
+      <datalist id="state-list"><option value="Rajasthan"><option value="Uttar Pradesh"><option value="Uttarakhand"><option value="Ladakh"><option value="Jammu & Kashmir"><option value="Himachal Pradesh"><option value="Delhi"><option value="Punjab"><option value="Kerala"><option value="Karnataka"><option value="Tamil Nadu"><option value="Andhra Pradesh"><option value="Telangana"><option value="West Bengal"><option value="Odisha"><option value="Bihar"><option value="Jharkhand"><option value="Andaman & Nicobar"><option value="Goa"><option value="Maharashtra"><option value="Gujarat"><option value="Assam"><option value="Meghalaya"><option value="Sikkim"><option value="Arunachal Pradesh"><option value="Nagaland"><option value="Manipur"><option value="Mizoram"><option value="Tripura"></datalist>
+      <div class="mrow"><div class="field"><label>Starting Price (₹)</label><input type="number" name="price_from" required></div><div class="field"><label>Badge (optional)</label><input type="text" name="badge" placeholder="New · Best Seller · Trending"></div></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="hidden" name="image_file">
+        <div class="dz" id="dest-dropzone">
+          <div class="dz-preview" id="dest-dz-preview" style="display:none">
+            <img id="dest-dz-img" alt="">
+            <button type="button" class="dz-remove" id="dest-dz-remove">✕ Remove</button>
+          </div>
+          <div class="dz-empty" id="dest-dz-empty">
+            <div class="dz-icon">📷</div>
+            <p><strong>Drag & drop</strong> a photo here, or <span class="dz-browse">click to browse</span></p>
+            <p class="dz-hint">JPG, PNG or WEBP · up to 8MB</p>
+          </div>
+          <input type="file" id="dest-dz-input" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+        </div>
+        <p id="dest-dz-status" style="font-size:.72rem;color:var(--muted);margin:6px 0 0"></p>
+      </div>
+      <div class="field"><label>Emoji (shown if no photo)</label><input type="text" name="emoji" placeholder="🏝️" maxlength="4"></div>
+      <div class="field"><label>Short Description</label><textarea name="description" rows="2" placeholder="One or two sentences for the explore page hero."></textarea></div>
+      <div class="field"><label>Highlights (one per line — becomes the numbered list and gallery captions)</label><textarea name="highlights_lines" rows="4" placeholder="Sunset over the caldera&#10;Blue-domed churches of Oia&#10;Wine tasting in Pyrgos&#10;Boat trip to the volcano"></textarea></div>
+      <div class="mrow"><div class="field"><label>Suggested Duration</label><input type="text" name="duration" placeholder="4-6 Days"></div><div class="field"><label>Best Time to Go</label><input type="text" name="best_time" placeholder="Jun – Sep"></div></div>
+      <div class="field"><label>Day-by-Day Itinerary (one day per line — format: <code>Day title :: description</code>)</label><textarea name="itinerary_lines" rows="6" placeholder="Day 1: Arrive in Kochi :: Check in to your hotel and relax.&#10;Day 2: Munnar Tour :: Head to Munnar, visit tea plantations and Eravikulam National Park.&#10;Day 3: Munnar :: Free day to explore at your own pace.&#10;Day 4: Munnar to Kumarakom :: Scenic drive to the Kumarakom backwaters.&#10;Day 5: Kumarakom to Alleppey :: Houseboat cruise through the Alleppey backwaters.&#10;Day 6: Depart Kochi :: Transfer to the airport for departure."></textarea></div>
+      <p style="font-size:.72rem;color:var(--muted);margin:-8px 0 12px">This becomes the "Itinerary" accordion on the destination's explore page — shown day by day, exactly as entered here.</p>
+      <button type="submit" class="btn-submit">Save Destination</button>
+    </form>
+  </div>
+</div>
+<script src="/js/anim.js" defer></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Package — TravelBeey</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<nav id="navbar">
+  <div class="logo" onclick="location.href='/'"><span>🐝</span> Travel<em>Beey</em></div>
+  <button type="button" class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="navbar-links">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="navbar-links">
+    <li><a href="/#destinations">Destinations</a></li>
+    <li><a href="/#reviews">Reviews</a></li>
+  </ul>
+  <div class="nav-actions" id="nav-actions">
+    <a href="/login" class="btn-ghost">Login</a>
+    <a href="/register" class="btn-primary">Sign Up</a>
+  </div>
+</nav>
+
+<div id="package-root">
+  <div class="eh-skel">Loading package…</div>
+</div>
+
+<!-- BOOKING MODAL (shared markup/JS with the homepage) -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>Book Your Trip</h3>
+    <p class="modal-pkg" id="modal-pkg-name">Select Package</p>
+    <form id="booking-form">
+      <input type="hidden" id="bk-pkg-id" name="package_id">
+      <div class="mrow"><div class="field"><label>Full Name *</label><input type="text" name="guest_name" required placeholder="Your full name"></div><div class="field"><label>Email *</label><input type="email" name="guest_email" required placeholder="your@email.com"></div></div>
+      <div class="mrow"><div class="field"><label>Phone *</label><input type="tel" name="guest_phone" required placeholder="+91 98765 43210"></div><div class="field"><label>Travellers *</label><select name="travellers"><option>1 Adult</option><option>2 Adults</option><option>2 Adults + 1 Child</option><option>Group (6+)</option></select></div></div>
+      <div class="mrow"><div class="field"><label>Destination *</label><input type="text" name="destination" required placeholder="Where to?"></div><div class="field"><label>Travel Date *</label><input type="date" name="travel_date" required></div></div>
+      <div class="field"><label>Notes</label><textarea name="notes" rows="2" placeholder="Any special requests…" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(10,46,54,.15);font-family:inherit;resize:vertical"></textarea></div>
+      <button type="submit" class="btn-submit" id="bk-submit">Confirm Booking Request</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/main.js" defer></script>
+<script src="/js/package.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "travelbeey-new",
+  "version": "1.0.0",
+  "description": "TravelBeey Full Stack Tour Booking Platform",
+  "main": "server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.10.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^2.2.0"
+  }
+}

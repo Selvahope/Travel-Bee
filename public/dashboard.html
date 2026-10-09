@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard — TravelBeey</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body class="dash-page">
+<div id="site-preloader" aria-hidden="true">
+  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
+  <div class="pl-bar"></div>
+  <div class="pl-pct">FINDING YOUR HIVE…</div>
+</div>
+<nav id="navbar">
+  <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>🐝</span> Travel<em>Beey</em></a></div>
+  <div class="nav-actions">
+    <span id="dash-welcome" style="color:rgba(255,255,255,.7);font-size:.875rem"></span>
+    <button onclick="logout()" class="btn-ghost">Logout</button>
+  </div>
+</nav>
+<div class="dash-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <a href="#" class="snav active" data-tab="bookings">📋 My Bookings</a>
+      <a href="#" class="snav" data-tab="newbooking">➕ New Booking</a>
+      <a href="#" class="snav" data-tab="profile">👤 Profile</a>
+      <a href="/" class="snav">🏠 Homepage</a>
+    </nav>
+  </aside>
+  <!-- CONTENT -->
+  <main class="dash-main">
+    <!-- MY BOOKINGS -->
+    <div class="tab-panel active" id="tab-bookings">
+      <div class="panel-header"><h2>My Bookings</h2><p>Track all your TravelBeey adventures</p></div>
+      <div id="bookings-list"><div class="loading">Loading your bookings…</div></div>
+    </div>
+
+    <!-- NEW BOOKING -->
+    <div class="tab-panel" id="tab-newbooking">
+      <div class="panel-header"><h2>Book a New Trip</h2><p>Fill in the details and we'll handle the rest</p></div>
+      <div class="form-card tilt-lift" data-tilt data-tilt-strength="3">
+        <form id="dash-booking-form">
+          <div class="mrow"><div class="field"><label>Full Name *</label><input type="text" name="guest_name" required placeholder="Your name"></div><div class="field"><label>Email *</label><input type="email" name="guest_email" required placeholder="your@email.com"></div></div>
+          <div class="mrow"><div class="field"><label>Phone *</label><input type="tel" name="guest_phone" required placeholder="+91 98765 43210"></div><div class="field"><label>Travellers *</label><select name="travellers"><option>1 Adult</option><option>2 Adults</option><option>2 Adults + 1 Child</option><option>Group (6+)</option></select></div></div>
+          <div class="mrow"><div class="field"><label>Destination *</label><input type="text" name="destination" required placeholder="Bali, Maldives, Paris…"></div><div class="field"><label>Travel Date *</label><input type="date" name="travel_date" required></div></div>
+          <div class="field"><label>Package *</label><select name="package_id" id="dash-pkg-select"><option value="">Loading packages…</option></select></div>
+          <div class="field"><label>Special Requests</label><textarea name="notes" rows="3" placeholder="Any special needs or requests…"></textarea></div>
+          <button type="submit" class="btn-submit">Submit Booking Request</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="tab-panel" id="tab-profile">
+      <div class="panel-header"><h2>My Profile</h2><p>Your account details</p></div>
+      <div class="form-card tilt-lift" id="profile-card" data-tilt data-tilt-strength="3"><div class="loading">Loading…</div></div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/anim.js" defer></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
