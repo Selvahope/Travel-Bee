@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css"><title>Track booking — TravelBeey</title></head>
+<body data-nav="track"><div id="site-header"></div>
+<main class="wrap" style="max-width:720px">
+  <div class="page-h"><h1>Track your booking</h1><p>Enter the reference you received and the email used to book.</p></div>
+  <form class="card-p" id="tf" novalidate style="display:grid;gap:14px;margin-top:16px">
+    <div class="row2"><div class="fld"><label for="t-ref">Booking reference</label><input id="t-ref" placeholder="TBY-XXXXXXXX-XXX" required></div><div class="fld"><label for="t-email">Email</label><input id="t-email" type="email" required></div></div>
+    <div class="err" id="t-err" hidden></div>
+    <button class="btn btn-primary btn-lg" type="submit">Check status</button>
+  </form>
+  <div id="t-res" style="margin-top:18px"></div>
+</main>
+<div id="site-footer"></div><script src="/js/site.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+$('#t-ref').value = q.get('ref') || ''; $('#t-email').value = q.get('email') || '';
+async function look() {
+  const err = $('#t-err'); err.hidden = true; $('#t-res').innerHTML = '';
+  const r = await api('GET', '/api/bookings/track?ref=' + encodeURIComponent($('#t-ref').value) + '&email=' + encodeURIComponent($('#t-email').value));
+  if (r.error) { err.textContent = r.error; err.hidden = false; return; }
+  $('#t-res').innerHTML = '<div class="bcard"><div><div class="bref">' + esc(r.ref) + '</div><h3>' + esc(r.destination) + ' — ' + esc(r.package_name) + '</h3><div class="bmeta"><span>' + icon('cal') + esc(r.travel_date) + '</span><span>' + icon('users') + esc(r.travellers) + '</span></div><span class="st st-' + esc(r.status) + '">' + esc(r.status) + '</span></div><div class="bright"><div class="price">' + fmt(r.total_price) + '</div><span class="fine">Requested ' + esc(r.created_at.slice(0, 10)) + '</span></div></div>';
+}
+$('#tf').addEventListener('submit', e => { e.preventDefault(); look(); });
+if (q.get('ref') && q.get('email')) look();
+</script></body></html>

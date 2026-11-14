@@ -1,45 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — TravelBeey</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/main.css">
-</head>
-<body class="auth-page">
-<div id="site-preloader" aria-hidden="true">
-  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
-  <div class="pl-bar"></div>
-  <div class="pl-pct">FINDING YOUR HIVE…</div>
-</div>
-<nav id="navbar"><div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>🐝</span> Travel<em>Beey</em></a></div></nav>
-<div class="auth-wrap" data-parallax-layer>
-  <div class="auth-orb auth-orb-1 parallax-float" data-depth="18"></div>
-  <div class="auth-orb auth-orb-2 parallax-float" data-depth="-14"></div>
-  <div class="auth-card" data-tilt data-tilt-strength="4">
-    <h2>Welcome Back</h2>
-    <p class="auth-sub">Log in to manage your bookings</p>
-    <form id="login-form">
-      <div class="field"><label>Email</label><input type="email" name="email" required placeholder="your@email.com"></div>
-      <div class="field"><label>Password</label><input type="password" name="password" required placeholder="••••••••"></div>
-      <div id="auth-error" class="auth-error" style="display:none"></div>
-      <button type="submit" class="btn-submit" id="login-btn">Log In</button>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css"><title>Log in — TravelBeey</title></head>
+<body>
+<div id="site-header"></div>
+<div class="authwrap">
+  <div class="auth-side" id="auth-img"><div><h2>Your next trip is a few clicks away.</h2>
+    <ul><li><svg class="icon" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Track every booking in one place</li><li><svg class="icon" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Book faster with saved details</li><li><svg class="icon" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Cancel a request any time before confirmation</li></ul></div></div>
+  <div class="auth-form"><div class="auth-box">
+    <h1>Log in</h1><p>Welcome back. Log in to see your trips.</p>
+    <form id="login-form" novalidate>
+      <div class="fld"><label for="email">Email</label><input id="email" type="email" name="email" autocomplete="email" required></div>
+      <div class="fld"><label for="password">Password</label><input id="password" type="password" name="password" autocomplete="current-password" required></div>
+      <div id="auth-error" class="err" hidden></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="login-btn">Log in</button>
     </form>
-    <p class="auth-switch">Don't have an account? <a href="/register">Sign up free</a></p>
-    <div class="auth-divider">or</div>
-    <div class="demo-creds">
-      <strong>Demo Admin:</strong> admin@travelbeey.com / Admin@1234
-    </div>
-  </div>
-  <div class="auth-hero">
-    <div class="auth-hero-inner">
-      <div class="auth-hero-icon parallax-float" data-depth="10">🌊</div>
-      <h3>Your next adventure awaits</h3>
-      <p>Join 42,000+ happy travellers who've explored the world with TravelBeey.</p>
-    </div>
-  </div>
+    <p class="alt">New to TravelBeey? <a href="/register">Create an account</a></p>
+  </div></div>
 </div>
-<script src="/js/anim.js" defer></script>
+<script src="/js/site.js"></script>
 <script src="/js/auth.js"></script>
-</body>
-</html>
+<script>$('#auth-img').insertAdjacentHTML('afterbegin', img('Allepy Backwaters, Kerala, India.jpg', 1400, ''));</script>
+</body></html>

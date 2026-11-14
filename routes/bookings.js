@@ -2,33 +2,97 @@
 const express = require('express');
 const db      = require('../db/database');
 const { requireLogin, requireAdmin } = require('../middleware/auth');
+const { clean, cleanText, isEmail, isPhone, rateLimit } = require('../middleware/security');
 const router  = express.Router();
 
+const CHILD_RATE = 0.75; // children (2–11 yrs) pay 75% of the adult per-person price
+
 function genRef() {
-  return 'TBY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,5).toUpperCase();
+  return 'TBY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
 }
 
-// POST /api/bookings
-router.post('/', (req, res) => {
-  const { guest_name, guest_email, guest_phone, destination, package_id, travel_date, travellers, notes } = req.body;
-  if (!guest_name || !guest_email || !guest_phone || !destination || !package_id || !travel_date || !travellers)
-    return res.status(400).json({ error: 'All required fields must be filled.' });
+// Turn "2 Adults + 1 Child" / "Group (6+)" (older forms) into numbers.
+function parseTravellers(str) {
+  const s = String(str || '');
+  const a = s.match(/(\d+)\s*Adult/i), c = s.match(/(\d+)\s*Child/i);
+  if (a || c) return { adults: a ? +a[1] : 1, children: c ? +c[1] : 0 };
+  if (/group/i.test(s)) return { adults: 6, children: 0 };
+  return { adults: 1, children: 0 };
+}
+function travellersLabel(adults, children) {
+  return `${adults} Adult${adults > 1 ? 's' : ''}` + (children ? ` + ${children} Child${children > 1 ? 'ren' : ''}` : '');
+}
 
-  const pkg = db.prepare('SELECT * FROM packages WHERE id = ?').get(package_id);
-  if (!pkg) return res.status(404).json({ error: 'Package not found.' });
+// POST /api/bookings — guests and logged-in users
+router.post('/', rateLimit(15, 10 * 60 * 1000), (req, res) => {
+  const b = req.body || {};
+  const guest_name  = clean(b.guest_name, 80);
+  const guest_email = clean(b.guest_email, 254).toLowerCase();
+  const guest_phone = clean(b.guest_phone, 20);
+  const destination = clean(b.destination, 120);
+  const from_city   = clean(b.from_city, 60) || null;
+  const travel_date = clean(b.travel_date, 10);
+  const notes       = cleanText(b.notes, 1000) || null;
 
+  if (!guest_name || !guest_email || !guest_phone || !destination || !b.package_id || !travel_date)
+    return res.status(400).json({ error: 'Please fill in all required fields.' });
+  if (!isEmail(guest_email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (!isPhone(guest_phone)) return res.status(400).json({ error: 'Please enter a valid phone number.' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(travel_date) || isNaN(Date.parse(travel_date)))
+    return res.status(400).json({ error: 'Please choose a valid travel date.' });
+  if (travel_date < new Date().toISOString().slice(0, 10))
+    return res.status(400).json({ error: 'Travel date cannot be in the past.' });
+
+  let adults, children;
+  if (b.adults !== undefined) { adults = parseInt(b.adults, 10); children = parseInt(b.children || 0, 10); }
+  else ({ adults, children } = parseTravellers(b.travellers));
+  if (!Number.isInteger(adults) || adults < 1 || adults > 20 || !Number.isInteger(children) || children < 0 || children > 10)
+    return res.status(400).json({ error: 'Travellers: 1–20 adults and up to 10 children.' });
+
+  const pkg = db.prepare('SELECT * FROM packages WHERE id = ? AND active = 1').get(b.package_id);
+  if (!pkg) return res.status(404).json({ error: 'That package is no longer available.' });
+
+  const total = Math.round(pkg.price * (adults + children * CHILD_RATE));
   const ref = genRef();
-  const result = db.prepare(
-    'INSERT INTO bookings (ref,user_id,guest_name,guest_email,guest_phone,destination,package_id,package_name,travel_date,travellers,total_price,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
-  ).run(ref, req.session.userId||null, guest_name.trim(), guest_email.toLowerCase(), guest_phone.trim(), destination.trim(), package_id, pkg.name, travel_date, travellers, pkg.price, notes||null);
+  const result = db.prepare(`
+    INSERT INTO bookings (ref,user_id,guest_name,guest_email,guest_phone,destination,package_id,package_name,
+                          travel_date,travellers,adults,children,from_city,total_price,notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(ref, req.session.userId || null, guest_name, guest_email, guest_phone, destination, pkg.id, pkg.name,
+         travel_date, travellersLabel(adults, children), adults, children, from_city, total, notes);
 
-  res.json({ success: true, ref, bookingId: result.lastInsertRowid, message: 'Booking submitted! Our team will contact you within 2 hours.' });
+  res.json({ success: true, ref, bookingId: result.lastInsertRowid, total_price: total,
+             message: 'Booking request received! Our team will contact you within 2 hours.' });
 });
 
-// GET /api/bookings/my
+// GET /api/bookings/my — own bookings (linked by account OR by the email used while booking as guest)
 router.get('/my', requireLogin, (req, res) => {
-  const rows = db.prepare('SELECT b.*, p.tier FROM bookings b LEFT JOIN packages p ON b.package_id=p.id WHERE b.user_id=? ORDER BY b.created_at DESC').all(req.session.userId);
+  const u = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId);
+  const rows = db.prepare(`
+    SELECT b.*, p.tier, p.image_file AS package_image FROM bookings b LEFT JOIN packages p ON b.package_id = p.id
+    WHERE b.user_id = ? OR b.guest_email = ? ORDER BY b.created_at DESC, b.id DESC
+  `).all(req.session.userId, u ? u.email : '');
   res.json(rows);
+});
+
+// PATCH /api/bookings/:id/cancel — a customer cancels their own booking
+router.patch('/:id(\\d+)/cancel', requireLogin, (req, res) => {
+  const u = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId);
+  const bk = db.prepare('SELECT * FROM bookings WHERE id = ? AND (user_id = ? OR guest_email = ?)')
+                .get(req.params.id, req.session.userId, u ? u.email : '');
+  if (!bk) return res.status(404).json({ error: 'Booking not found.' });
+  if (!['pending', 'confirmed'].includes(bk.status)) return res.status(400).json({ error: `A ${bk.status} booking cannot be cancelled.` });
+  db.prepare("UPDATE bookings SET status='cancelled', updated_at=datetime('now') WHERE id=?").run(bk.id);
+  res.json({ success: true });
+});
+
+// GET /api/bookings/track?ref=…&email=… — guests look up a booking; needs BOTH ref and the booking email
+router.get('/track', rateLimit(30, 10 * 60 * 1000), (req, res) => {
+  const ref = clean(req.query.ref, 40).toUpperCase();
+  const email = clean(req.query.email, 254).toLowerCase();
+  const bk = db.prepare('SELECT ref,guest_name,destination,package_name,travel_date,travellers,total_price,status,created_at FROM bookings WHERE ref=? AND guest_email=?').get(ref, email);
+  if (!bk) return res.status(404).json({ error: 'No booking found for that reference and email.' });
+  res.json(bk);
 });
 
 // GET /api/bookings — admin all
@@ -37,30 +101,24 @@ router.get('/', requireAdmin, (req, res) => {
   let sql = 'SELECT * FROM bookings WHERE 1=1';
   const params = [];
   if (status) { sql += ' AND status=?'; params.push(status); }
-  if (search)  { const s='%'+search+'%'; sql += ' AND (guest_name LIKE ? OR guest_email LIKE ? OR ref LIKE ? OR destination LIKE ?)'; params.push(s,s,s,s); }
-  sql += ' ORDER BY created_at DESC';
+  if (search) { const s = '%' + search + '%'; sql += ' AND (guest_name LIKE ? OR guest_email LIKE ? OR ref LIKE ? OR destination LIKE ?)'; params.push(s, s, s, s); }
+  sql += ' ORDER BY created_at DESC, id DESC';
   res.json(db.prepare(sql).all(...params));
 });
 
-// PATCH /api/bookings/:id/status
-router.patch('/:id/status', requireAdmin, (req, res) => {
+// PATCH /api/bookings/:id/status — admin
+router.patch('/:id(\\d+)/status', requireAdmin, (req, res) => {
   const { status } = req.body;
-  if (!['pending','confirmed','cancelled','completed'].includes(status)) return res.status(400).json({ error: 'Invalid status.' });
-  db.prepare('UPDATE bookings SET status=? WHERE id=?').run(status, req.params.id);
+  if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) return res.status(400).json({ error: 'Invalid status.' });
+  const r = db.prepare("UPDATE bookings SET status=?, updated_at=datetime('now') WHERE id=?").run(status, req.params.id);
+  if (!r.changes) return res.status(404).json({ error: 'Booking not found.' });
   res.json({ success: true });
 });
 
-// DELETE /api/bookings/:id
-router.delete('/:id', requireAdmin, (req, res) => {
+// DELETE /api/bookings/:id — admin
+router.delete('/:id(\\d+)', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM bookings WHERE id=?').run(req.params.id);
   res.json({ success: true });
-});
-
-// GET /api/bookings/:ref
-router.get('/:ref', (req, res) => {
-  const booking = db.prepare('SELECT * FROM bookings WHERE ref=?').get(req.params.ref);
-  if (!booking) return res.status(404).json({ error: 'Booking not found.' });
-  res.json(booking);
 });
 
 module.exports = router;

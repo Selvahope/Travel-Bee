@@ -26,6 +26,7 @@
       <a href="#" class="snav" data-tab="users">👥 Users</a>
       <a href="#" class="snav" data-tab="packages">📦 Packages</a>
       <a href="#" class="snav" data-tab="destinations">🗺️ Destinations</a>
+      <a href="#" class="snav" data-tab="enquiries">✉️ Enquiries</a>
       <a href="/" class="snav">🏠 View Site</a>
     </nav>
   </aside>
@@ -85,6 +86,15 @@
       <div class="panel-header"><h2>Destinations</h2><button class="btn-primary" onclick="showAddDest()">+ Add Destination</button></div>
       <p style="color:var(--muted);font-size:.85rem;margin:-10px 0 18px">These are the cards shown under "Trending Destinations" on the homepage, and power each destination's explore page.</p>
       <div class="pkg-admin-grid" id="dest-admin-grid"></div>
+    </div>
+
+    <!-- ENQUIRIES -->
+    <div class="tab-panel" id="tab-enquiries">
+      <div class="panel-header"><h2>Enquiries &amp; subscribers</h2><p id="sub-count"></p></div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Date</th><th>From</th><th>Subject / message</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="enq-tbody"></tbody>
+      </table></div>
     </div>
 
   </main>

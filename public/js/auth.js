@@ -1,68 +1,20 @@
-// auth.js — login & register pages
+// auth.js — login & register (keeps ?next= so users land back where they were)
+const next = new URLSearchParams(location.search).get('next') || '';
+const showErr = (m) => { const e = $('#auth-error'); e.textContent = m; e.hidden = false; };
 
-async function api(method, url, body) {
-  const opts = { method, headers: {'Content-Type':'application/json'}, credentials:'include' };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  return r.json();
-}
-
-function showError(msg) {
-  const el = document.getElementById('auth-error');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function hideError() {
-  const el = document.getElementById('auth-error');
-  if (el) el.style.display = 'none';
-}
-
-// LOGIN
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  loginForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    hideError();
-    const btn = document.getElementById('login-btn');
-    btn.disabled = true; btn.textContent = 'Logging in…';
-    const data = Object.fromEntries(new FormData(e.target).entries());
+function wire(formId, btnId, url, busy, idle) {
+  const f = $(formId); if (!f) return;
+  f.addEventListener('submit', async e => {
+    e.preventDefault(); $('#auth-error').hidden = true;
+    const btn = $(btnId); btn.disabled = true; btn.textContent = busy;
+    const data = Object.fromEntries(new FormData(f).entries()); data.next = next;
     try {
-      const r = await api('POST', '/api/auth/login', data);
-      if (r.success) {
-        location.href = r.redirect;
-      } else {
-        showError(r.error || 'Login failed.');
-        btn.disabled = false; btn.textContent = 'Log In';
-      }
-    } catch(err) {
-      showError('Network error. Please try again.');
-      btn.disabled = false; btn.textContent = 'Log In';
-    }
+      const r = await api('POST', url, data);
+      if (r.success) location.href = r.redirect; else { showErr(r.error || 'Something went wrong.'); }
+    } catch (err) { showErr('Network error. Please try again.'); }
+    btn.disabled = false; btn.textContent = idle;
   });
 }
-
-// REGISTER
-const regForm = document.getElementById('register-form');
-if (regForm) {
-  regForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    hideError();
-    const btn = document.getElementById('register-btn');
-    btn.disabled = true; btn.textContent = 'Creating account…';
-    const data = Object.fromEntries(new FormData(e.target).entries());
-    try {
-      const r = await api('POST', '/api/auth/register', data);
-      if (r.success) {
-        location.href = r.redirect;
-      } else {
-        showError(r.error || 'Registration failed.');
-        btn.disabled = false; btn.textContent = 'Create Account';
-      }
-    } catch(err) {
-      showError('Network error. Please try again.');
-      btn.disabled = false; btn.textContent = 'Create Account';
-    }
-  });
-}
+wire('#login-form', '#login-btn', '/api/auth/login', 'Logging in…', 'Log in');
+wire('#register-form', '#register-btn', '/api/auth/register', 'Creating account…', 'Create account');
+const alt = $('.alt a'); if (alt && next) alt.href += '?next=' + encodeURIComponent(next);

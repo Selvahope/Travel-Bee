@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css"><title>Contact — TravelBeey</title></head>
+<body data-nav="contact"><div id="site-header"></div>
+<main class="wrap">
+  <div class="page-h"><h1>Talk to a trip expert</h1><p>Planning something custom, or need help with a booking? Send a message and we'll reply by email or phone.</p></div>
+  <div class="two" style="margin-top:20px">
+    <form class="card-p" id="cf" novalidate style="display:grid;gap:14px">
+      <div class="row2"><div class="fld"><label for="c-name">Name</label><input id="c-name" required autocomplete="name"></div><div class="fld"><label for="c-email">Email</label><input id="c-email" type="email" required autocomplete="email"></div></div>
+      <div class="row2"><div class="fld"><label for="c-phone">Phone <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="c-phone" type="tel" autocomplete="tel"></div><div class="fld"><label for="c-subject">Subject</label><input id="c-subject" placeholder="Custom trip, booking help…"></div></div>
+      <div class="fld"><label for="c-msg">Message</label><textarea id="c-msg" rows="5" required></textarea></div>
+      <div class="err" id="c-err" hidden></div>
+      <button class="btn btn-primary btn-lg" type="submit" id="c-go">Send message</button>
+    </form>
+    <div class="card-p ci">
+      <div><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><p><strong>Email</strong><a href="mailto:hello@travelbeey.com">hello@travelbeey.com</a></p></div>
+      <div><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><p><strong>Response time</strong>Within 2 hours on working days</p></div>
+      <div><svg class="icon" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg><p><strong>Already booked?</strong><a href="/track">Track your booking</a></p></div>
+    </div>
+  </div>
+</main>
+<div id="site-footer"></div><script src="/js/site.js"></script>
+<script>
+$('#cf').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#c-err'); err.hidden = true;
+  const b = $('#c-go'); b.disabled = true; b.textContent = 'Sending…';
+  const r = await api('POST', '/api/contact', { name: $('#c-name').value, email: $('#c-email').value, phone: $('#c-phone').value, subject: $('#c-subject').value, message: $('#c-msg').value });
+  b.disabled = false; b.textContent = 'Send message';
+  if (r.success) { toast(r.message); e.target.reset(); } else { err.textContent = r.error; err.hidden = false; }
+});
+</script></body></html>

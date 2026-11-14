@@ -39,6 +39,7 @@ function switchTab(name) {
   if (name === 'users')     loadUsers();
   if (name === 'packages')  loadAdminPackages();
   if (name === 'destinations') loadAdminDestinations();
+  if (name === 'enquiries') loadEnquiries();
 }
 document.querySelectorAll('.snav[data-tab]').forEach(a => {
   a.addEventListener('click', e => { e.preventDefault(); switchTab(a.dataset.tab); });
@@ -511,3 +512,21 @@ document.getElementById('dest-form')?.addEventListener('submit', async e => {
 });
 
 init();
+
+
+// ── ENQUIRIES (contact form) + newsletter count ───────────────
+const escA = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function loadEnquiries() {
+  const [rows, subs] = await Promise.all([api('GET', '/api/admin/contacts'), api('GET', '/api/admin/subscribers')]);
+  document.getElementById('sub-count').textContent = (Array.isArray(subs) ? subs.length : 0) + ' newsletter subscribers';
+  document.getElementById('enq-tbody').innerHTML = (Array.isArray(rows) ? rows : []).map(c => `
+    <tr>
+      <td>${escA((c.created_at||'').slice(0,10))}</td>
+      <td><strong>${escA(c.name)}</strong><br><small style="color:var(--muted)">${escA(c.email)}${c.phone ? ' · ' + escA(c.phone) : ''}</small></td>
+      <td>${c.subject ? '<strong>' + escA(c.subject) + '</strong><br>' : ''}${escA(c.message)}</td>
+      <td><select onchange="setEnquiry(${c.id},this.value)" style="padding:5px 8px;border-radius:6px;border:1px solid #ddd;font-size:.75rem">${['new','replied','closed'].map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="action-btn danger" onclick="delEnquiry(${c.id})">🗑</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted)">No enquiries yet.</td></tr>';
+}
+async function setEnquiry(id, status) { const r = await api('PATCH', '/api/admin/contacts/' + id, { status }); showToast(r.success ? 'Updated' : 'Failed', !!r.success); }
+async function delEnquiry(id) { if (!confirm('Delete this enquiry?')) return; await api('DELETE', '/api/admin/contacts/' + id); loadEnquiries(); }

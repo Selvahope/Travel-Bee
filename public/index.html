@@ -3,272 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TravelBeey — Find Your Hive Away From Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/main.css">
+<title>TravelBeey — Find your hive away from home</title>
+<meta name="description" content="Book curated holiday packages across India — Rajasthan, Kerala, Ladakh, Goa, Andaman and more. Transparent prices, a callback within 2 hours.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
 </head>
-<body>
-<div id="site-preloader" aria-hidden="true">
-  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
-  <div class="pl-bar"></div>
-  <div class="pl-pct">FINDING YOUR HIVE…</div>
-</div>
+<body data-nav="">
+<div id="site-header"></div>
 
-<nav id="navbar">
-  <div class="logo"><span>🐝</span> Travel<em>Beey</em></div>
-  <button type="button" class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="navbar-links">
-    <span></span><span></span><span></span>
-  </button>
-  <ul class="nav-links" id="navbar-links">
-    <li class="has-mega" id="dest-mega-trigger">
-      <a href="#destinations" id="dest-mega-toggle">Destinations <span class="mega-caret">▾</span></a>
-      <div class="mega-menu" id="dest-mega-menu">
-        <div class="mega-visited">
-          <strong>Most Visited:</strong>
-          <a href="#destinations" class="mega-pill" data-region="all">All India</a>
-          <a href="#destinations" class="mega-pill" data-region="north">Rajasthan &amp; Ladakh</a>
-          <a href="#destinations" class="mega-pill" data-region="south">Kerala Backwaters</a>
-          <a href="#destinations" class="mega-pill" data-region="west">Goa</a>
-          <a href="#destinations" class="mega-pill" data-region="east">Andaman &amp; Nicobar</a>
-        </div>
-        <div class="mega-body">
-          <ul class="mega-regions" id="mega-regions">
-            <li class="mega-region active" data-region="north">North India <span>›</span></li>
-            <li class="mega-region" data-region="south">South India <span>›</span></li>
-            <li class="mega-region" data-region="east">East India <span>›</span></li>
-            <li class="mega-region" data-region="west">West India <span>›</span></li>
-            <li class="mega-region" data-region="northeast">North East <span>›</span></li>
-          </ul>
-          <div class="mega-states" id="mega-states">
-            <div class="mega-states-panel" data-region="north">
-              <a href="#destinations" data-region="north">Rajasthan</a>
-              <a href="#destinations" data-region="north">Uttar Pradesh</a>
-              <a href="#destinations" data-region="north">Uttarakhand</a>
-              <a href="#destinations" data-region="north">Ladakh</a>
-              <a href="#destinations" data-region="north">Jammu &amp; Kashmir</a>
-              <a href="#destinations" data-region="north">Himachal Pradesh</a>
-              <a href="#destinations" data-region="north">Delhi</a>
-              <a href="#destinations" data-region="north">Punjab</a>
-            </div>
-            <div class="mega-states-panel" data-region="south" hidden>
-              <a href="#destinations" data-region="south">Kerala</a>
-              <a href="#destinations" data-region="south">Karnataka</a>
-              <a href="#destinations" data-region="south">Tamil Nadu</a>
-              <a href="#destinations" data-region="south">Andhra Pradesh</a>
-              <a href="#destinations" data-region="south">Telangana</a>
-            </div>
-            <div class="mega-states-panel" data-region="east" hidden>
-              <a href="#destinations" data-region="east">West Bengal</a>
-              <a href="#destinations" data-region="east">Odisha</a>
-              <a href="#destinations" data-region="east">Bihar</a>
-              <a href="#destinations" data-region="east">Jharkhand</a>
-              <a href="#destinations" data-region="east">Andaman &amp; Nicobar</a>
-            </div>
-            <div class="mega-states-panel" data-region="west" hidden>
-              <a href="#destinations" data-region="west">Goa</a>
-              <a href="#destinations" data-region="west">Maharashtra</a>
-              <a href="#destinations" data-region="west">Gujarat</a>
-            </div>
-            <div class="mega-states-panel" data-region="northeast" hidden>
-              <a href="#destinations" data-region="northeast">Assam</a>
-              <a href="#destinations" data-region="northeast">Meghalaya</a>
-              <a href="#destinations" data-region="northeast">Sikkim</a>
-              <a href="#destinations" data-region="northeast">Arunachal Pradesh</a>
-              <a href="#destinations" data-region="northeast">Nagaland</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </li>
-    <li><a href="#reviews">Reviews</a></li>
-  </ul>
-  <div class="nav-actions" id="nav-actions">
-    <a href="/login" class="btn-ghost">Login</a>
-    <a href="/register" class="btn-primary">Sign Up</a>
-  </div>
-</nav>
-
-<!-- HERO -->
 <section class="hero">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="hero-content">
-    <div class="eyebrow">🐝 Find Your Hive Away From Home</div>
-    <h1>INDIA<br>IS YOUR <span class="gold">HONEY.</span></h1>
-    <p class="hero-sub">Curated tour packages across every region of India. We handle everything so you can simply explore.</p>
-  </div>
-  <div class="booking-box">
-    <div class="form-tabs">
-      <button class="tab active">Tour Packages</button>
-      <button class="tab">Honeymoon</button>
-      <button class="tab">Adventure</button>
-    </div>
-    <form class="book-form" id="quick-search">
-      <div class="form-grid">
-        <div class="field"><label>Flying From</label><input type="text" id="qs-from" autocomplete="off" placeholder="Chennai, IN" name="from"></div>
-        <div class="field"><label>Destination</label><input type="text" id="qs-dest" autocomplete="off" placeholder="Goa, Kerala, Ladakh…" name="destination"></div>
-        <div class="field"><label>Travel Date</label><input type="date" id="qs-date" name="travel_date"></div>
-        <div class="field">
-          <label>Package</label>
-          <select id="qs-pkg" name="package_id">
-            <option value="">Loading…</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Travellers</label>
-          <select name="travellers" id="qs-travellers">
-            <option>1 Adult</option><option>2 Adults</option>
-            <option>2 Adults + 1 Child</option><option>2 Adults + 2 Children</option><option>Group (6+)</option>
-          </select>
-        </div>
-        <div class="field"><button type="submit" class="btn-search">🔍 Search Packages</button></div>
-      </div>
-    </form>
-  </div>
-</section>
-
-<!-- STATS -->
-<div class="stats-bar reveal-stagger">
-  <div class="stat"><div class="stat-num" data-count="80" data-suffix="+">0</div><div class="stat-label">Destinations</div></div>
-  <div class="stat"><div class="stat-num" data-count="42" data-suffix="K">0</div><div class="stat-label">Happy Travellers</div></div>
-  <div class="stat"><div class="stat-num" data-count="350" data-suffix="+">0</div><div class="stat-label">Tour Packages</div></div>
-  <div class="stat"><div class="stat-num" data-count="4.9" data-suffix="★">0</div><div class="stat-label">Avg Rating</div></div>
-</div>
-
-<!-- INDIA MAP — "Experience India, Every Click" -->
-<section class="map-section" id="world-map-section">
-  <div class="map-copy reveal">
-    <div class="section-tag">Explore India</div>
-    <h2>EVERY PIN<br>A NEW STORY.</h2>
-    <p>Hand-scouted destinations across North, South, East and West India — click a region on the map (or a pin) to jump straight to it.</p>
-    <div class="map-cta-row">
-      <a href="#destinations" class="btn-primary">Explore All Destinations</a>
-    </div>
-    <div class="map-legend">
-      <span class="ml-dot"></span> Live destination — click to open
-    </div>
-  </div>
-  <div class="map-wrap" data-tilt data-tilt-strength="3">
-    <img class="world-map-img" src="/img/india-map.svg" alt="Map of India" draggable="false" loading="lazy" onerror="this.classList.add('map-img-error')">
-    <div class="map-regions" id="map-regions">
-      <button type="button" class="map-region" data-region="north" style="left:15%;top:0%;width:45%;height:33%" onclick="goToRegion('north')"><span class="mr-label">North<br>India</span></button>
-      <button type="button" class="map-region" data-region="east" style="left:48%;top:8%;width:35%;height:35%" onclick="goToRegion('east')"><span class="mr-label">East<br>India</span></button>
-      <button type="button" class="map-region" data-region="northeast" style="left:72%;top:6%;width:26%;height:26%" onclick="goToRegion('northeast')"><span class="mr-label">North<br>East</span></button>
-      <button type="button" class="map-region" data-region="west" style="left:6%;top:35%;width:32%;height:30%" onclick="goToRegion('west')"><span class="mr-label">West<br>India</span></button>
-      <button type="button" class="map-region" data-region="south" style="left:18%;top:60%;width:42%;height:38%" onclick="goToRegion('south')"><span class="mr-label">South<br>India</span></button>
-    </div>
-    <div class="map-pins" id="map-pins"><!-- pins injected by JS --></div>
-  </div>
-</section>
-
-<!-- DESTINATIONS -->
-<section class="section bg-cream" id="destinations">
-  <div class="section-tag">Top Picks</div>
-  <h2>TRENDING<br>DESTINATIONS</h2>
-  <p class="section-sub">Hand-picked locations scouted by our team on the ground.</p>
-  <div class="region-filter-bar" id="region-filter-bar">
-    <button type="button" class="rf-chip active" data-region="all" onclick="goToRegion('all')">All India</button>
-    <button type="button" class="rf-chip" data-region="north" onclick="goToRegion('north')">North</button>
-    <button type="button" class="rf-chip" data-region="south" onclick="goToRegion('south')">South</button>
-    <button type="button" class="rf-chip" data-region="east" onclick="goToRegion('east')">East</button>
-    <button type="button" class="rf-chip" data-region="west" onclick="goToRegion('west')">West</button>
-    <button type="button" class="rf-chip" data-region="northeast" onclick="goToRegion('northeast')">North East</button>
-  </div>
-  <div class="dest-grid reveal-stagger" id="dest-grid">
-    <!-- loaded by JS -->
-  </div>
-  <p class="dest-empty" id="dest-empty" hidden>No destinations tagged for this region yet — check back soon, or browse all our tour packages below.</p>
-</section>
-
-<!-- HOW IT WORKS (pinned scroll-swap) -->
-<section class="section bg-cream" id="how">
-  <div class="section-tag">How It Works</div>
-  <h2>BOOK IN<br>FOUR STEPS</h2>
-  <p class="section-sub">No call centers, no back-and-forth. Just tell us the trip and we build it.</p>
-  <div class="pin-wrap" id="pin-wrap">
-    <div class="pin-visual">
-      <div class="pin-visual-item active" data-step="1">🐝</div>
-      <div class="pin-visual-item" data-step="2">🗺️</div>
-      <div class="pin-visual-item" data-step="3">💳</div>
-      <div class="pin-visual-item" data-step="4">🏖️</div>
-      <div class="pin-progress"><span id="pin-progress-fill"></span></div>
-    </div>
-    <div class="pin-steps">
-      <div class="pin-step active" data-step="1">
-        <span class="pin-num">01</span>
-        <h3>Tell us your dream trip</h3>
-        <p>Pick a destination, rough dates and headcount in the search bar above — or just tell us "somewhere warm in December" and we'll take it from there.</p>
-      </div>
-      <div class="pin-step" data-step="2">
-        <span class="pin-num">02</span>
-        <h3>We build the itinerary</h3>
-        <p>A specialist who has actually been there designs your route — flights, stays, excursions — and sends it back within 24 hours.</p>
-      </div>
-      <div class="pin-step" data-step="3">
-        <span class="pin-num">03</span>
-        <h3>Approve and pay securely</h3>
-        <p>Review every detail, adjust anything you like, then lock it in with a deposit. Full ATOL protection included automatically.</p>
-      </div>
-      <div class="pin-step" data-step="4">
-        <span class="pin-num">04</span>
-        <h3>Fly out, we stay on call</h3>
-        <p>24/7 Beeline support from departure to landing back home — if anything changes mid-trip, a real human sorts it.</p>
-      </div>
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="hero-comb" aria-hidden="true"></div>
+  <div class="hero-bee" id="hero-bee" aria-hidden="true"></div>
+  <div class="hero-in">
+    <h1>Find your hive away from home.</h1>
+    <p>Holidays across India, planned end to end. Pick a destination and your dates. We arrange stays, transfers and sightseeing, and call you within 2 hours to confirm.</p>
+    <div class="hero-chips" id="hero-chips">
+      <a class="chip" href="#packages" data-tier="premium">Luxury escapes</a>
+      <a class="chip" href="#packages" data-tier="adventure">Adventure trips</a>
+      <a class="chip" href="#packages" data-tier="starter">Value breaks</a>
+      <a class="chip" href="#destinations">Browse destinations</a>
     </div>
   </div>
 </section>
 
-<!-- REVIEWS -->
-<section class="section bg-sand" id="reviews">
-  <div class="section-tag">Traveller Stories</div>
-  <h2>WHAT OUR<br>HIVE SAYS</h2>
-  <p class="section-sub">42,000+ trips and counting.</p>
-  <div class="test-grid reveal-stagger">
-    <div class="test-card" data-tilt data-tilt-strength="6"><div class="stars">★★★★★</div><p class="quote">"TravelBeey turned our Bali trip into something genuinely magical. The hidden rice-terrace sunset they arranged — not one other group in sight."</p><div class="author"><div class="avatar">PK</div><div><strong>Priya K.</strong><br><small>Chennai → Bali</small></div></div></div>
-    <div class="test-card" data-tilt data-tilt-strength="6"><div class="stars">★★★★★</div><p class="quote">"The Queen Bee honeymoon package was flawless. Every detail handled — we didn't think about anything except enjoying ourselves."</p><div class="author"><div class="avatar">AR</div><div><strong>Arjun & Riya</strong><br><small>Mumbai → Maldives</small></div></div></div>
-    <div class="test-card" data-tilt data-tilt-strength="6"><div class="stars">★★★★★</div><p class="quote">"First solo trip ever. The 24/7 support gave real peace of mind — I called at 2am and someone answered immediately. Never felt alone."</p><div class="author"><div class="avatar">SN</div><div><strong>Shreya N.</strong><br><small>Bangalore → Japan</small></div></div></div>
-  </div>
+<section class="search" aria-label="Search trips">
+  <form class="search-card" id="search" autocomplete="off">
+    <div class="search-tabs"><span class="stab on">Find your holiday</span></div>
+    <div class="search-grid">
+      <div class="sf"><label for="s-from">Departing from</label><input id="s-from" placeholder="Chennai" name="from"></div>
+      <div class="sf"><label for="s-to">Going to</label><input id="s-to" placeholder="Goa, Kerala, Ladakh…" name="to"></div>
+      <div class="sf"><label for="s-date">Travel date</label><input id="s-date" type="date" name="date"></div>
+      <div class="sf"><label for="s-adults">Travellers</label>
+        <select id="s-adults" name="adults">
+          <option value="1">1 adult</option><option value="2" selected>2 adults</option><option value="3">3 adults</option><option value="4">4 adults</option><option value="6">6 adults</option><option value="8">8 adults</option>
+        </select></div>
+      <button class="btn btn-primary search-go" type="submit">Search</button>
+    </div>
+  </form>
 </section>
 
-<!-- NEWSLETTER -->
-<section class="newsletter">
-  <div class="section-tag" style="color:rgba(10,46,54,.6)">Stay in the Loop</div>
-  <h2>GET DEALS BEFORE<br>ANYONE ELSE</h2>
-  <p>Flash sales and new destinations — straight to your inbox.</p>
-  <div class="nl-form"><input type="email" id="nl-email" placeholder="your@email.com"><button onclick="subscribe()">Subscribe</button></div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-grid">
-    <div><div class="logo" style="margin-bottom:12px">🐝 Travel<em>Beey</em></div><p style="color:rgba(255,255,255,.4);font-size:.875rem">Find your hive away from home. 80+ destinations worldwide.</p></div>
-    <div><h4>Destinations</h4><ul><li><a href="#">Bali</a></li><li><a href="#">Kyoto</a></li><li><a href="#">Maldives</a></li><li><a href="#">Paris</a></li></ul></div>
-    <div><h4>Regions</h4><ul><li><a href="#destinations" onclick="goToRegion('north')">North India</a></li><li><a href="#destinations" onclick="goToRegion('south')">South India</a></li><li><a href="#destinations" onclick="goToRegion('east')">East India</a></li><li><a href="#destinations" onclick="goToRegion('west')">West India</a></li></ul></div>
-    <div><h4>Account</h4><ul><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li><li><a href="/dashboard">My Bookings</a></li></ul></div>
+<main class="wrap">
+  <div class="trust">
+    <div><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.5 3.2 8 7.5 9 4.3-1 7.5-4.5 7.5-9V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><p><strong>Prices shown upfront</strong><span>Per adult, total updates live</span></p></div>
+    <div><svg class="icon" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg><p><strong>Callback in 2 hours</strong><span>A trip expert confirms details</span></p></div>
+    <div><svg class="icon" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg><p><strong>Customise anything</strong><span>Tell us what to change</span></p></div>
+    <div><svg class="icon" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg><p><strong>Support while you travel</strong><span>Reach us any time</span></p></div>
   </div>
-  <div class="footer-bottom"><p>© 2026 TravelBeey. All rights reserved.</p></div>
-</footer>
 
-<!-- BOOKING MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <h3>Book Your Trip</h3>
-    <p class="modal-pkg" id="modal-pkg-name">Select Package</p>
-    <form id="booking-form">
-      <input type="hidden" id="bk-pkg-id" name="package_id">
-      <div class="mrow"><div class="field"><label>Full Name *</label><input type="text" name="guest_name" required placeholder="Your full name"></div><div class="field"><label>Email *</label><input type="email" name="guest_email" required placeholder="your@email.com"></div></div>
-      <div class="mrow"><div class="field"><label>Phone *</label><input type="tel" name="guest_phone" required placeholder="+91 98765 43210"></div><div class="field"><label>Travellers *</label><select name="travellers"><option>1 Adult</option><option>2 Adults</option><option>2 Adults + 1 Child</option><option>Group (6+)</option></select></div></div>
-      <div class="mrow"><div class="field"><label>Destination *</label><input type="text" name="destination" required placeholder="Where to?"></div><div class="field"><label>Travel Date *</label><input type="date" name="travel_date" required></div></div>
-      <div class="field"><label>Notes</label><textarea name="notes" rows="2" placeholder="Any special requests…" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(10,46,54,.15);font-family:inherit;resize:vertical"></textarea></div>
-      <button type="submit" class="btn-submit" id="bk-submit">Confirm Booking Request</button>
-    </form>
-  </div>
-</div>
+  <section class="sec" id="destinations">
+    <div class="sec-h"><div><h2>Popular destinations</h2><p>Tap a place to see highlights, the day-by-day plan and book.</p></div>
+      <div class="seg" id="region-seg" role="group" aria-label="Filter by region">
+        <button class="on" data-r="all">All India</button><button data-r="north">North</button><button data-r="south">South</button><button data-r="east">East</button><button data-r="west">West</button>
+      </div></div>
+    <div class="dgrid" id="dgrid">
+      <div class="sk" style="aspect-ratio:3/4"></div><div class="sk" style="aspect-ratio:3/4"></div><div class="sk" style="aspect-ratio:3/4"></div><div class="sk" style="aspect-ratio:3/4"></div>
+    </div>
+    <p id="d-empty" class="fine" hidden style="padding:20px 0">No destinations in this region yet.</p>
+  </section>
 
-<div class="toast" id="toast"></div>
+  <section class="sec" id="packages">
+    <div class="sec-h"><div><h2>Holiday packages</h2><p>Complete trips with stay, transfers and sightseeing. Prices are per adult.</p></div>
+      <div class="seg" id="tier-seg" role="group" aria-label="Filter by type">
+        <button class="on" data-t="all">All</button><button data-t="starter">Value</button><button data-t="premium">Luxury</button><button data-t="adventure">Adventure</button>
+      </div></div>
+    <div class="pgrid" id="pgrid"><div class="sk" style="height:380px"></div><div class="sk" style="height:380px"></div><div class="sk" style="height:380px"></div></div>
+  </section>
 
-<script src="/js/anim.js" defer></script>
-<script src="/js/main.js" defer></script>
+  <section class="sec">
+    <div class="sec-h"><div><h2>How booking works</h2><p>Four steps from idea to boarding pass.</p></div></div>
+    <div class="steps">
+      <div class="step"><h3>Choose a trip</h3><p>Browse destinations or packages and open the one you like.</p></div>
+      <div class="step"><h3>Send a request</h3><p>Pick dates and travellers. You see the total before sending — nothing is charged.</p></div>
+      <div class="step"><h3>We call you</h3><p>An expert confirms availability, adjusts the plan and shares the final itinerary.</p></div>
+      <div class="step"><h3>Travel</h3><p>Track the booking in your account and reach us if anything changes.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="reviews">
+    <div class="sec-h"><div><h2>What travellers say</h2></div></div>
+    <div class="revs">
+      <div class="rev"><div class="stars" aria-label="5 stars">★★★★★</div><p>“The Kerala houseboat stay was exactly as described and the transfers were on time every day. Booking took five minutes.”</p><footer><div class="av">PK</div><div><strong>Priya K.</strong>Chennai</div></footer></div>
+      <div class="rev"><div class="stars" aria-label="5 stars">★★★★★</div><p>“We asked for a quieter honeymoon itinerary and they rebuilt the whole plan the same evening. Very responsive.”</p><footer><div class="av">AR</div><div><strong>Arjun &amp; Riya</strong>Mumbai</div></footer></div>
+      <div class="rev"><div class="stars" aria-label="5 stars">★★★★★</div><p>“First solo trip. The team stayed reachable the whole time and the guide in Ladakh was excellent.”</p><footer><div class="av">SN</div><div><strong>Shreya N.</strong>Bengaluru</div></footer></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div><h2>Get new deals in your inbox</h2><p>New destinations and seasonal offers. No spam.</p></div>
+    <form class="nl" id="nl"><input type="email" required placeholder="you@example.com" aria-label="Email address"><button class="btn btn-primary" type="submit">Subscribe</button></form>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="/js/site.js"></script>
+<script src="/js/home.js"></script>
 </body>
 </html>

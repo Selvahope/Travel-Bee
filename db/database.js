@@ -98,6 +98,43 @@ addPkgCol('itinerary',  'TEXT'); // day-by-day plan — days separated by "||", 
 addPkgCol('best_time',  'TEXT');
 addPkgCol('map_query',  'TEXT'); // free-text location fed to the embedded Google Map, e.g. "Puri, Odisha, India"
 
+// ── MIGRATE: booking detail columns (adults / children / departure city) ──
+// total_price is now computed server-side from these, so the DB always holds
+// the real amount and not just the per-person package price.
+const bkCols = db.prepare("PRAGMA table_info(bookings)").all().map(c => c.name);
+const addBkCol = (col, def) => { if (!bkCols.includes(col)) db.exec(`ALTER TABLE bookings ADD COLUMN ${col} ${def}`); };
+addBkCol('adults',     'INTEGER NOT NULL DEFAULT 1');
+addBkCol('children',   'INTEGER NOT NULL DEFAULT 0');
+addBkCol('from_city',  'TEXT');
+addBkCol('updated_at', 'TEXT');
+
+// ── MIGRATE: contact enquiries + newsletter + persistent sessions ─
+const ctCols = db.prepare("PRAGMA table_info(contacts)").all().map(c => c.name);
+const addCtCol = (col, def) => { if (!ctCols.includes(col)) db.exec(`ALTER TABLE contacts ADD COLUMN ${col} ${def}`); };
+addCtCol('phone',   'TEXT');
+addCtCol('subject', 'TEXT');
+addCtCol('status',  "TEXT NOT NULL DEFAULT 'new'");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS subscribers (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- express-session store: logins survive server restarts / redeploys
+  CREATE TABLE IF NOT EXISTS sessions (
+    sid     TEXT PRIMARY KEY,
+    sess    TEXT NOT NULL,
+    expires INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_bookings_user   ON bookings(user_id);
+  CREATE INDEX IF NOT EXISTS idx_bookings_email  ON bookings(guest_email);
+  CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+  CREATE INDEX IF NOT EXISTS idx_sessions_exp    ON sessions(expires);
+`);
+
 // ── SEED DATA ──────────────────────────────────────────────────
 const seedPackages = db.prepare('SELECT COUNT(*) as c FROM packages').get();
 if (seedPackages.c === 0) {
@@ -134,6 +171,20 @@ const pkgDetails = {
     itinerary: 'Day 1: Arrival & Check-in::Private transfer to your 5-star stay, evening welcome dinner.||Day 2: Guided Excursion One::First of five curated excursions with a private guide.||Day 3: Guided Excursion Two::Continue exploring with your concierge-arranged itinerary.||Day 4: Leisure Day::Free day to relax, spa or optional add-ons.||Day 5: Guided Excursion Three::Another concierge-picked highlight of the region.||Day 6: Guided Excursion Four::Continuing the curated route.||Day 7: Guided Excursion Five & Departure::Final excursion, then private transfer to the airport.',
   },
 };
+Object.assign(pkgDetails, {
+  'Worker Bee':     { image_file: 'Ahilya Ghat by the Ganges, Varanasi.jpg', best_time: 'Oct – Mar', map_query: 'Varanasi, Uttar Pradesh, India',
+    highlights: 'Sunrise boat ride on the Ganges|Ganga Aarti at Dashashwamedh Ghat|Budget-friendly hotel|Self-guided city map included', itinerary: '' },
+  'Royal Jelly':    { image_file: 'City Palace by lake Pichola, Udaipur.jpg', best_time: 'Sep – Mar', map_query: 'Udaipur, Rajasthan, India',
+    highlights: 'Private lake-view palace suite|Chauffeur-driven transfers|Michelin-recommended dining|24/7 personal concierge', itinerary: '' },
+  'Wild Nectar':    { image_file: 'Rishikesh, Lakshman Jhula.jpg', best_time: 'Sep – Apr', map_query: 'Rishikesh, Uttarakhand, India',
+    highlights: 'White-water rafting on the Ganges|Eco-lodge stay|Native local guide|Adventure activity passes', itinerary: '' },
+  'Swarm Trail':    { image_file: 'Pangong Tso Lake.jpg', best_time: 'May – Sep', map_query: 'Leh, Ladakh, India',
+    highlights: 'Pangong Lake overnight|Nubra Valley dunes|Trekking guide included|Group gear rental', itinerary: '' },
+  'Honeymoon Hive': { image_file: 'Radhanagar beach, Havelock islands, Andaman and Nicobar.JPG', best_time: 'Nov – May', map_query: 'Havelock Island, Andaman and Nicobar, India',
+    highlights: 'Candlelit private beach dinner|5-star honeymoon suite|Couples spa session|Private excursions', itinerary: '' },
+  'Family Comb':    { image_file: 'Goa beautiful beach.JPG', best_time: 'Nov – Feb', map_query: 'Goa, India',
+    highlights: 'Family-size rooms|Kid-friendly excursions|Beach days at Baga & Palolem|Airport transfers included', itinerary: '' },
+});
 const updPkg = db.prepare("UPDATE packages SET image_file=?, highlights=?, itinerary=?, best_time=?, map_query=? WHERE name=? AND (image_file IS NULL OR image_file = '')");
 for (const [name, d] of Object.entries(pkgDetails)) {
   updPkg.run(d.image_file, d.highlights, d.itinerary, d.best_time, d.map_query, name);

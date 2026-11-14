@@ -7,6 +7,11 @@ const db      = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 const router  = express.Router();
 
+// Admin text is rendered with innerHTML in places, so strip angle brackets from every string field.
+const S = (v) => (v == null ? '' : String(v).replace(/[<>]/g, '').trim());
+const N = (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : NaN; };
+const TIERS = ['starter', 'premium', 'adventure'];
+
 // ── PHOTO UPLOAD (drag & drop / file picker in the admin panel) ─
 // Files are saved under public/uploads/<type> and served statically by
 // server.js's express.static('public'). We store the resulting web path
@@ -77,22 +82,24 @@ router.get('/destinations/:id', (req, res) => {
 
 // POST /api/destinations — admin
 router.post('/destinations', requireAdmin, (req, res) => {
-  const { name, country, emoji, price_from, badge, description, highlights, gallery, duration, best_time, image_file, itinerary } = req.body;
-  if (!name || !country || !price_from) return res.status(400).json({ error: 'Name, country and starting price are required.' });
+  const b = req.body, price_from = N(b.price_from);
+  if (!S(b.name) || !S(b.country) || !(price_from > 0)) return res.status(400).json({ error: 'Name, state and a valid starting price are required.' });
   const r = db.prepare(`
     INSERT INTO destinations (name,country,emoji,price_from,badge,description,highlights,gallery,duration,best_time,image_file,itinerary)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-  `).run(name, country, emoji||'✈️', price_from, badge||'', description||'', highlights||'', gallery||'', duration||'', best_time||'', image_file||'', itinerary||'');
+  `).run(S(b.name), S(b.country), S(b.emoji)||'✈️', price_from, S(b.badge), S(b.description), S(b.highlights), S(b.gallery), S(b.duration), S(b.best_time), S(b.image_file), S(b.itinerary));
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 // PUT /api/destinations/:id — admin
 router.put('/destinations/:id', requireAdmin, (req, res) => {
-  const { name, country, emoji, price_from, badge, description, highlights, gallery, duration, best_time, image_file, itinerary, active } = req.body;
-  db.prepare(`
+  const b = req.body, price_from = N(b.price_from);
+  if (!S(b.name) || !S(b.country) || !(price_from > 0)) return res.status(400).json({ error: 'Name, state and a valid starting price are required.' });
+  const r = db.prepare(`
     UPDATE destinations SET name=?,country=?,emoji=?,price_from=?,badge=?,description=?,highlights=?,gallery=?,duration=?,best_time=?,image_file=?,itinerary=?,active=?
     WHERE id=?
-  `).run(name, country, emoji||'✈️', price_from, badge||'', description||'', highlights||'', gallery||'', duration||'', best_time||'', image_file||'', itinerary||'', active!==undefined?active:1, req.params.id);
+  `).run(S(b.name), S(b.country), S(b.emoji)||'✈️', price_from, S(b.badge), S(b.description), S(b.highlights), S(b.gallery), S(b.duration), S(b.best_time), S(b.image_file), S(b.itinerary), b.active!==undefined?(b.active?1:0):1, req.params.id);
+  if (!r.changes) return res.status(404).json({ error: 'Destination not found.' });
   res.json({ success: true });
 });
 
@@ -113,22 +120,24 @@ router.get('/:id(\\d+)', (req, res) => {
 
 // POST /api/packages — admin
 router.post('/', requireAdmin, (req, res) => {
-  const { name, tier, description, price, duration, includes, image_file, highlights, itinerary, best_time, map_query } = req.body;
-  if (!name || !price) return res.status(400).json({ error: 'Name and price required.' });
+  const b = req.body, price = N(b.price);
+  if (!S(b.name) || !(price > 0)) return res.status(400).json({ error: 'Name and a valid price are required.' });
   const r = db.prepare(`
     INSERT INTO packages (name,tier,description,price,duration,includes,image_file,highlights,itinerary,best_time,map_query)
     VALUES (?,?,?,?,?,?,?,?,?,?,?)
-  `).run(name, tier||'starter', description||'', price, duration||'', includes||'', image_file||'', highlights||'', itinerary||'', best_time||'', map_query||'');
+  `).run(S(b.name), TIERS.includes(b.tier)?b.tier:'starter', S(b.description), price, S(b.duration), S(b.includes), S(b.image_file), S(b.highlights), S(b.itinerary), S(b.best_time), S(b.map_query));
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 // PUT /api/packages/:id — admin
 router.put('/:id', requireAdmin, (req, res) => {
-  const { name, tier, description, price, duration, includes, active, image_file, highlights, itinerary, best_time, map_query } = req.body;
-  db.prepare(`
+  const b = req.body, price = N(b.price);
+  if (!S(b.name) || !(price > 0)) return res.status(400).json({ error: 'Name and a valid price are required.' });
+  const r = db.prepare(`
     UPDATE packages SET name=?,tier=?,description=?,price=?,duration=?,includes=?,active=?,image_file=?,highlights=?,itinerary=?,best_time=?,map_query=?
     WHERE id=?
-  `).run(name, tier, description, price, duration, includes, active!==undefined?active:1, image_file||'', highlights||'', itinerary||'', best_time||'', map_query||'', req.params.id);
+  `).run(S(b.name), TIERS.includes(b.tier)?b.tier:'starter', S(b.description), price, S(b.duration), S(b.includes), b.active!==undefined?(b.active?1:0):1, S(b.image_file), S(b.highlights), S(b.itinerary), S(b.best_time), S(b.map_query), req.params.id);
+  if (!r.changes) return res.status(404).json({ error: 'Package not found.' });
   res.json({ success: true });
 });
 

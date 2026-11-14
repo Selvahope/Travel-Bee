@@ -6,7 +6,7 @@ Node.js + Express + SQLite full-stack web app.
 
 ```bash
 # 1. Install dependencies
-npm install
+npm install   # Node 22 or newer required
 
 # 2. Start the server
 npm start
@@ -21,11 +21,21 @@ npm start
 |-------|--------------------------|-------------|
 | Admin | admin@travelbeey.com     | Admin@1234  |
 
+## What's new in this version
+- New professional storefront (MakeMyTrip/Goibibo-style): search bar, destination cards, package cards, sticky booking card with live price.
+- Everything is stored in SQLite (`db/travelbeey.db`): users, bookings, enquiries (`contacts`), newsletter `subscribers`, and login `sessions` (logins now survive restarts).
+- Booking total is calculated on the server: adults x price + children x 75% of price.
+- New pages: `/track` (guest booking lookup by reference + email), `/contact`; admin has an Enquiries tab.
+
 ## Pages
 
 | URL          | Description                       |
 |--------------|-----------------------------------|
-| /            | Homepage with booking search      |
+| /            | Homepage with search, destinations, packages |
+| /explore?id= | Destination page + booking        |
+| /package?id= | Package page + booking            |
+| /track       | Track a booking (ref + email)     |
+| /contact     | Contact form (saved to DB)        |
 | /login       | User login                        |
 | /register    | New user registration             |
 | /dashboard   | User dashboard + my bookings      |
@@ -93,7 +103,8 @@ travelbeey/
 
 ## Production Tips
 
-- Change session secret in server.js
+- **Data persistence on Render:** the free plan has an ephemeral disk, so the DB resets on every deploy. Attach a Render Disk (paid) and set `DATA_DIR` to its mount path (e.g. `/var/data`), or move to a hosted DB.
+- Set `SESSION_SECRET` (render.yaml already generates one)
 - Set `NODE_ENV=production`
 - Use a reverse proxy (nginx) in front
 - Set up HTTPS (Let's Encrypt)

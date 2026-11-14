@@ -1,120 +1,56 @@
-// dashboard.js — user dashboard
+// dashboard.js — customer account: my trips, cancel, profile
+$('.side [data-tab="trips"]').innerHTML = icon('list') + ' My trips';
+$('.side [data-tab="profile"]').innerHTML = icon('user') + ' Profile';
+$('#plan').innerHTML = icon('search') + ' Plan a new trip';
 
-async function api(method, url, body) {
-  const opts = { method, headers: {'Content-Type':'application/json'}, credentials:'include' };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  if (r.status === 401) { location.href = '/login'; return {}; }
-  return r.json();
+function tab(name) {
+  $$('.tabp').forEach(p => p.classList.toggle('on', p.id === 'tab-' + name));
+  $$('.side [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
 }
+$$('.side [data-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
 
-function showToast(msg, ok=true) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.borderLeftColor = ok ? 'var(--honey)' : '#dc2626';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
-
-function statusBadge(s) {
-  return `<span class="status-badge status-${s}">${s}</span>`;
-}
-
-// ── INIT ──────────────────────────────────────────────────────
-async function init() {
-  const me = await api('GET', '/api/auth/me');
-  if (!me.loggedIn) { location.href = '/login'; return; }
-  if (me.role === 'admin') { location.href = '/admin'; return; }
-  document.getElementById('dash-welcome').textContent = 'Hi, ' + me.name + ' 👋';
-
-  // Pre-fill booking form with user info
-  const nameF = document.querySelector('[name="guest_name"]');
-  const emailF = document.querySelector('[name="guest_email"]');
-  if (nameF) nameF.value = me.name || '';
-
-  loadPackagesSelect();
-  loadMyBookings();
-  window.refreshAnimations && window.refreshAnimations();
-}
-
-async function loadPackagesSelect() {
-  const pkgs = await api('GET', '/api/packages');
-  const sel = document.getElementById('dash-pkg-select');
-  if (sel) sel.innerHTML = pkgs.map(p => `<option value="${p.id}">${p.name} — ${fmt(p.price)}</option>`).join('');
-}
-
-async function loadMyBookings() {
-  const list = document.getElementById('bookings-list');
-  list.innerHTML = '<div class="loading">Loading…</div>';
+async function loadTrips() {
   const rows = await api('GET', '/api/bookings/my');
-  if (!rows || !rows.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✈️</div><p>No bookings yet. <a href="#" onclick="switchTab('newbooking')">Book your first trip!</a></p></div>`;
+  if (rows._status === 401) { location.href = '/login?next=/dashboard'; return; }
+  const list = $('#list');
+  if (!Array.isArray(rows) || !rows.length) {
+    list.innerHTML = `<div class="empty">${icon('plane')}<p>You haven't booked a trip yet.</p><a class="btn btn-primary" href="/#packages">Browse packages</a></div>`;
     return;
   }
-  list.innerHTML = `<div class="reveal-stagger">${rows.map(b => `
-    <div class="booking-card tilt-lift" data-tilt data-tilt-strength="3">
+  list.innerHTML = rows.map(b => `
+    <article class="bcard">
       <div>
-        <div class="bk-ref">${b.ref}</div>
-        <div class="bk-title">${b.destination} — ${b.package_name}</div>
-        <div class="bk-meta">📅 ${b.travel_date} &nbsp;|&nbsp; 👤 ${b.travellers}</div>
-        ${statusBadge(b.status)}
+        <div class="bref">${esc(b.ref)}</div>
+        <h3>${esc(b.destination)} — ${esc(b.package_name)}</h3>
+        <div class="bmeta"><span>${icon('cal')} ${esc(b.travel_date)}</span><span>${icon('users')} ${esc(b.travellers)}</span>${b.from_city ? `<span>${icon('plane')} from ${esc(b.from_city)}</span>` : ''}</div>
+        <span class="st st-${esc(b.status)}">${esc(b.status)}</span>
       </div>
-      <div>
-        <div class="bk-price">${b.total_price ? fmt(b.total_price) : '—'}</div>
-        <div style="font-size:.72rem;color:var(--muted);text-align:right;margin-top:4px">Booked ${b.created_at.slice(0,10)}</div>
+      <div class="bright">
+        <div class="price"><small>Total</small>${fmt(b.total_price)}</div>
+        <div><span class="fine">Requested ${esc((b.created_at || '').slice(0, 10))}</span>
+        ${['pending', 'confirmed'].includes(b.status) ? `<br><button class="btn btn-outline" style="margin-top:8px;padding:7px 14px" data-cancel="${b.id}">Cancel</button>` : ''}</div>
       </div>
-    </div>`).join('')}</div>`;
-  window.refreshAnimations && window.refreshAnimations();
+    </article>`).join('');
 }
-
-// ── TABS ──────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.snav').forEach(a => a.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  document.querySelector(`.snav[data-tab="${name}"]`)?.classList.add('active');
-}
-
-document.querySelectorAll('.snav[data-tab]').forEach(a => {
-  a.addEventListener('click', e => { e.preventDefault(); switchTab(a.dataset.tab); });
+$('#list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-cancel]'); if (!b) return;
+  if (!confirm('Cancel this booking request?')) return;
+  const r = await api('PATCH', `/api/bookings/${b.dataset.cancel}/cancel`);
+  if (r.success) { toast('Booking cancelled'); loadTrips(); } else toast(r.error, false);
 });
 
-// ── BOOKING FORM ──────────────────────────────────────────────
-document.getElementById('dash-booking-form')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const btn = e.target.querySelector('button[type="submit"]');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-  const data = Object.fromEntries(new FormData(e.target).entries());
-  const r = await api('POST', '/api/bookings', data);
-  if (r.success) {
-    showToast('🐝 ' + r.message + ' Ref: ' + r.ref);
-    e.target.reset();
-    switchTab('bookings');
-    loadMyBookings();
-  } else {
-    showToast(r.error || 'Something went wrong', false);
-  }
-  btn.disabled = false; btn.textContent = 'Submit Booking Request';
+$('#pf').addEventListener('submit', async e => {
+  e.preventDefault(); $('#p-err').hidden = true;
+  const r = await api('PATCH', '/api/auth/profile', { name: $('#p-name').value, phone: $('#p-phone').value });
+  if (r.success) { toast('Profile saved'); $('#hi').textContent = 'Hi, ' + $('#p-name').value.split(' ')[0]; }
+  else { $('#p-err').textContent = r.error; $('#p-err').hidden = false; }
 });
 
-// ── PROFILE ───────────────────────────────────────────────────
-async function loadProfile() {
+(async function () {
   const me = await api('GET', '/api/auth/me');
-  const card = document.getElementById('profile-card');
-  if (!card) return;
-  card.innerHTML = `
-    <div class="profile-row"><span class="profile-label">Name</span><span class="profile-val">${me.name}</span></div>
-    <div class="profile-row"><span class="profile-label">Role</span><span class="profile-val">${me.role}</span></div>
-    <div style="margin-top:20px"><a href="/" style="color:var(--teal);text-decoration:none;font-weight:600">← Back to homepage</a></div>`;
-}
-
-document.querySelector('.snav[data-tab="profile"]')?.addEventListener('click', loadProfile);
-
-async function logout() {
-  await api('POST', '/api/auth/logout');
-  location.href = '/';
-}
-
-init();
+  if (!me.loggedIn) { location.href = '/login?next=/dashboard'; return; }
+  if (me.role === 'admin') { location.href = '/admin'; return; }
+  $('#hi').textContent = 'Hi, ' + me.name.split(' ')[0];
+  $('#p-name').value = me.name; $('#p-email').value = me.email; $('#p-phone').value = me.phone || '';
+  loadTrips();
+})();
