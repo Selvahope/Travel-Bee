@@ -1,67 +1,86 @@
 // routes/admin.js
 const express = require('express');
-const db      = require('../db/database');
+const { getDb } = require('../db/mongo');
+const ah = require('../middleware/async');
 const { requireAdmin } = require('../middleware/auth');
 const router  = express.Router();
 
+const NO_ID = { projection: { _id: 0 } };
+const SORT_NEW = { created_at: -1, id: -1 };
+const intId = (v) => { const n = Number(v); return Number.isInteger(n) ? n : null; };
+
 // GET /api/admin/stats
-router.get('/stats', requireAdmin, (req, res) => {
-  const c = (sql) => db.prepare(sql).get().c;
-  const totalBookings     = c("SELECT COUNT(*) as c FROM bookings");
-  const pendingBookings   = c("SELECT COUNT(*) as c FROM bookings WHERE status='pending'");
-  const confirmedBookings = c("SELECT COUNT(*) as c FROM bookings WHERE status='confirmed'");
-  const totalRevenue    = db.prepare("SELECT COALESCE(SUM(total_price),0) as r FROM bookings WHERE status IN ('confirmed','completed')").get().r;
-  const totalUsers      = c("SELECT COUNT(*) as c FROM users WHERE role='user'");
-  const newEnquiries    = c("SELECT COUNT(*) as c FROM contacts WHERE status='new'");
-  const subscribers     = c("SELECT COUNT(*) as c FROM subscribers");
-  const recentBookings  = db.prepare("SELECT * FROM bookings ORDER BY created_at DESC, id DESC LIMIT 5").all();
-  const byStatus        = db.prepare("SELECT status, COUNT(*) as count FROM bookings GROUP BY status").all();
-  const topDest         = db.prepare("SELECT destination, COUNT(*) as count FROM bookings GROUP BY destination ORDER BY count DESC LIMIT 5").all();
-  res.json({ totalBookings, pendingBookings, confirmedBookings, totalRevenue, totalUsers, newEnquiries, subscribers, recentBookings, byStatus, topDest });
-});
+router.get('/stats', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  const B = db.collection('bookings');
+  let [totalBookings, pendingBookings, confirmedBookings, totalUsers, newEnquiries, subscribers,
+         revenue, recentBookings, byStatus, topDest] = await Promise.all([
+    B.countDocuments({}),
+    B.countDocuments({ status: 'pending' }),
+    B.countDocuments({ status: 'confirmed' }),
+    db.collection('users').countDocuments({ role: 'user' }),
+    db.collection('contacts').countDocuments({ status: 'new' }),
+    db.collection('subscribers').countDocuments({}),
+    B.aggregate([{ $match: { status: { $in: ['confirmed', 'completed'] } } }, { $group: { _id: null, r: { $sum: '$total_price' } } }]).toArray(),
+    B.find({}, NO_ID).sort(SORT_NEW).limit(5).toArray(),
+    B.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]).toArray(),
+    B.aggregate([{ $group: { _id: '$destination', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 5 }]).toArray(),
+  ]);
+  byStatus = byStatus.map((x) => ({ status: x._id, count: x.count }));
+  topDest  = topDest.map((x) => ({ destination: x._id, count: x.count }));
+  res.json({ totalBookings, pendingBookings, confirmedBookings, totalRevenue: revenue[0] ? revenue[0].r : 0,
+             totalUsers, newEnquiries, subscribers, recentBookings, byStatus, topDest });
+}));
 
 // GET /api/admin/users
-router.get('/users', requireAdmin, (req, res) => {
-  res.json(db.prepare("SELECT id,name,email,phone,role,created_at FROM users ORDER BY created_at DESC, id DESC").all());
-});
+router.get('/users', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('users').find({}, { projection: { _id: 0, password: 0 } }).sort(SORT_NEW).toArray());
+}));
 
 // PATCH /api/admin/users/:id/role
-router.patch('/users/:id/role', requireAdmin, (req, res) => {
+router.patch('/users/:id/role', requireAdmin, ah(async (req, res) => {
   const { role } = req.body;
+  const id = intId(req.params.id);
   if (!['user', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
-  if (req.params.id == req.session.userId && role !== 'admin') return res.status(400).json({ error: "You can't remove your own admin access." });
-  db.prepare('UPDATE users SET role=? WHERE id=?').run(role, req.params.id);
+  if (id === req.session.userId && role !== 'admin') return res.status(400).json({ error: "You can't remove your own admin access." });
+  const db = await getDb();
+  await db.collection('users').updateOne({ id }, { $set: { role } });
   res.json({ success: true });
-});
+}));
 
-// DELETE /api/admin/users/:id — bookings are kept (user_id set to NULL) so revenue history isn't lost
-router.delete('/users/:id', requireAdmin, (req, res) => {
-  if (req.params.id == req.session.userId) return res.status(400).json({ error: "Cannot delete yourself." });
-  db.transaction(() => {
-    db.prepare('UPDATE bookings SET user_id=NULL WHERE user_id=?').run(req.params.id);
-    db.prepare('DELETE FROM users WHERE id=?').run(req.params.id);
-  })();
+// DELETE /api/admin/users/:id — bookings are kept (user_id set to null) so revenue history isn't lost
+router.delete('/users/:id', requireAdmin, ah(async (req, res) => {
+  const id = intId(req.params.id);
+  if (id === req.session.userId) return res.status(400).json({ error: 'Cannot delete yourself.' });
+  const db = await getDb();
+  await db.collection('bookings').updateMany({ user_id: id }, { $set: { user_id: null } });
+  await db.collection('users').deleteOne({ id });
   res.json({ success: true });
-});
+}));
 
 // GET /api/admin/contacts — enquiries from the Contact form
-router.get('/contacts', requireAdmin, (req, res) => {
-  res.json(db.prepare("SELECT * FROM contacts ORDER BY created_at DESC, id DESC").all());
-});
-router.patch('/contacts/:id', requireAdmin, (req, res) => {
+router.get('/contacts', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('contacts').find({}, NO_ID).sort(SORT_NEW).toArray());
+}));
+router.patch('/contacts/:id', requireAdmin, ah(async (req, res) => {
   const status = req.body.status;
   if (!['new', 'replied', 'closed'].includes(status)) return res.status(400).json({ error: 'Invalid status.' });
-  db.prepare('UPDATE contacts SET status=? WHERE id=?').run(status, req.params.id);
+  const db = await getDb();
+  await db.collection('contacts').updateOne({ id: intId(req.params.id) }, { $set: { status } });
   res.json({ success: true });
-});
-router.delete('/contacts/:id', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM contacts WHERE id=?').run(req.params.id);
+}));
+router.delete('/contacts/:id', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  await db.collection('contacts').deleteOne({ id: intId(req.params.id) });
   res.json({ success: true });
-});
+}));
 
 // GET /api/admin/subscribers
-router.get('/subscribers', requireAdmin, (req, res) => {
-  res.json(db.prepare("SELECT * FROM subscribers ORDER BY created_at DESC, id DESC").all());
-});
+router.get('/subscribers', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('subscribers').find({}, NO_ID).sort(SORT_NEW).toArray());
+}));
 
 module.exports = router;

@@ -1,45 +1,27 @@
 // routes/packages.js
 const express = require('express');
 const multer  = require('multer');
-const path    = require('path');
-const fs      = require('fs');
-const db      = require('../db/database');
+const { ObjectId, Binary } = require('mongodb');
+const { getDb, nextId } = require('../db/mongo');
+const ah = require('../middleware/async');
 const { requireAdmin } = require('../middleware/auth');
 const router  = express.Router();
 
 // Admin text is rendered with innerHTML in places, so strip angle brackets from every string field.
 const S = (v) => (v == null ? '' : String(v).replace(/[<>]/g, '').trim());
 const N = (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : NaN; };
+const intId = (v) => { const n = Number(v); return Number.isInteger(n) ? n : null; };
 const TIERS = ['starter', 'premium', 'adventure'];
+const NO_ID = { projection: { _id: 0 } };
 
-// ── PHOTO UPLOAD (drag & drop / file picker in the admin panel) ─
-// Files are saved under public/uploads/<type> and served statically by
-// server.js's express.static('public'). We store the resulting web path
-// (e.g. "/uploads/destinations/169...-santorini.jpg") in the image_file
-// column — the same column that used to hold a Wikimedia Commons file title,
-// so wikiImg() on the frontend just needs to tell the two apart (see main.js).
-// Shared by both the destination and package admin forms; a "type" field in
-// the upload determines the subfolder (defaults to "destinations" so older
-// clients that don't send it keep working).
-const uploadRoot = process.env.DATA_DIR
-  ? path.join(process.env.DATA_DIR, 'uploads')
-  : path.join(__dirname, '..', 'public', 'uploads');
-fs.mkdirSync(path.join(uploadRoot, 'destinations'), { recursive: true });
-fs.mkdirSync(path.join(uploadRoot, 'packages'), { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const type = (req.body.type === 'packages') ? 'packages' : 'destinations';
-    cb(null, path.join(uploadRoot, type));
-  },
-  filename: (req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-]/g, '_');
-    cb(null, `${Date.now()}-${safeName}`);
-  }
-});
+// ── PHOTO UPLOAD ───────────────────────────────────────────────
+// Vercel's disk is read-only, so photos are stored inside MongoDB (collection "images")
+// and served from /uploads/img/<id>. That path is saved in the image_file column, exactly
+// like the old local-disk path, so the frontend needs no changes.
+// Vercel limits request bodies to ~4.5MB, so uploads are capped at 4MB.
 const upload = multer({
-  storage,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) return cb(new Error('Only JPG, PNG, WEBP or GIF images are allowed.'));
     cb(null, true);
@@ -47,104 +29,135 @@ const upload = multer({
 });
 
 // POST /api/packages/upload-image — admin, used by the destination & package photo dropzones
-router.post('/upload-image', requireAdmin, (req, res) => {
-  upload.single('photo')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message || 'Upload failed.' });
-    if (!req.file) return res.status(400).json({ error: 'No file received.' });
-    const type = (req.body.type === 'packages') ? 'packages' : 'destinations';
-    res.json({ success: true, path: `/uploads/${type}/${req.file.filename}` });
+router.post('/upload-image', requireAdmin, (req, res, next) => {
+  upload.single('photo')(req, res, async (err) => {
+    try {
+      if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Image is larger than 4MB.' : (err.message || 'Upload failed.') });
+      if (!req.file) return res.status(400).json({ error: 'No file received.' });
+      const db = await getDb();
+      const r = await db.collection('images').insertOne({
+        type: req.body.type === 'packages' ? 'packages' : 'destinations',
+        contentType: req.file.mimetype, name: req.file.originalname.slice(0, 120),
+        data: new Binary(req.file.buffer), created_at: new Date() });
+      res.json({ success: true, path: `/uploads/img/${r.insertedId}` });
+    } catch (e) { next(e); }
   });
 });
 
+// GET /uploads/img/:id — public image serving (mounted in server.js)
+const imageRouter = express.Router();
+imageRouter.get('/img/:id', ah(async (req, res) => {
+  if (!ObjectId.isValid(req.params.id)) return res.status(404).end();
+  const db = await getDb();
+  const img = await db.collection('images').findOne({ _id: new ObjectId(req.params.id) });
+  if (!img) return res.status(404).end();
+  res.set('Content-Type', img.contentType);
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(Buffer.from(img.data.buffer));
+}));
+router.imageRouter = imageRouter;
+
 // GET /api/packages — public
-router.get('/', (req, res) => {
-  res.json(db.prepare('SELECT * FROM packages WHERE active=1').all());
-});
+router.get('/', ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('packages').find({ active: 1 }, NO_ID).sort({ id: 1 }).toArray());
+}));
 
 // GET /api/destinations — public
-router.get('/destinations', (req, res) => {
-  res.json(db.prepare('SELECT * FROM destinations WHERE active=1').all());
-});
+router.get('/destinations', ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('destinations').find({ active: 1 }, NO_ID).sort({ id: 1 }).toArray());
+}));
 
-// GET /api/admin/destinations — admin (includes inactive, for the dashboard list)
-// NOTE: must be declared before the /destinations/:id route below, otherwise
-// Express would match "admin" as the :id param and this route would never fire.
-router.get('/destinations/admin/all', requireAdmin, (req, res) => {
-  res.json(db.prepare('SELECT * FROM destinations ORDER BY id DESC').all());
-});
+// GET /api/destinations/admin/all — admin (includes inactive, for the dashboard list)
+// NOTE: must be declared before the /destinations/:id route below.
+router.get('/destinations/admin/all', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  res.json(await db.collection('destinations').find({}, NO_ID).sort({ id: -1 }).toArray());
+}));
 
 // GET /api/destinations/:id — public (single destination for the explore page)
-router.get('/destinations/:id', (req, res) => {
-  const dest = db.prepare('SELECT * FROM destinations WHERE id=? AND active=1').get(req.params.id);
+router.get('/destinations/:id', ah(async (req, res) => {
+  const db = await getDb();
+  const dest = await db.collection('destinations').findOne({ id: intId(req.params.id), active: 1 }, NO_ID);
   if (!dest) return res.status(404).json({ error: 'Destination not found.' });
   res.json(dest);
-});
+}));
 
 // POST /api/destinations — admin
-router.post('/destinations', requireAdmin, (req, res) => {
+router.post('/destinations', requireAdmin, ah(async (req, res) => {
   const b = req.body, price_from = N(b.price_from);
   if (!S(b.name) || !S(b.country) || !(price_from > 0)) return res.status(400).json({ error: 'Name, state and a valid starting price are required.' });
-  const r = db.prepare(`
-    INSERT INTO destinations (name,country,emoji,price_from,badge,description,highlights,gallery,duration,best_time,image_file,itinerary)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-  `).run(S(b.name), S(b.country), S(b.emoji)||'✈️', price_from, S(b.badge), S(b.description), S(b.highlights), S(b.gallery), S(b.duration), S(b.best_time), S(b.image_file), S(b.itinerary));
-  res.json({ success: true, id: r.lastInsertRowid });
-});
+  const db = await getDb();
+  const id = await nextId('destinations');
+  await db.collection('destinations').insertOne({
+    id, name: S(b.name), country: S(b.country), emoji: S(b.emoji) || '✈️', price_from, badge: S(b.badge),
+    description: S(b.description), highlights: S(b.highlights), gallery: S(b.gallery), duration: S(b.duration),
+    best_time: S(b.best_time), image_file: S(b.image_file), itinerary: S(b.itinerary), active: 1 });
+  res.json({ success: true, id });
+}));
 
 // PUT /api/destinations/:id — admin
-router.put('/destinations/:id', requireAdmin, (req, res) => {
+router.put('/destinations/:id', requireAdmin, ah(async (req, res) => {
   const b = req.body, price_from = N(b.price_from);
   if (!S(b.name) || !S(b.country) || !(price_from > 0)) return res.status(400).json({ error: 'Name, state and a valid starting price are required.' });
-  const r = db.prepare(`
-    UPDATE destinations SET name=?,country=?,emoji=?,price_from=?,badge=?,description=?,highlights=?,gallery=?,duration=?,best_time=?,image_file=?,itinerary=?,active=?
-    WHERE id=?
-  `).run(S(b.name), S(b.country), S(b.emoji)||'✈️', price_from, S(b.badge), S(b.description), S(b.highlights), S(b.gallery), S(b.duration), S(b.best_time), S(b.image_file), S(b.itinerary), b.active!==undefined?(b.active?1:0):1, req.params.id);
-  if (!r.changes) return res.status(404).json({ error: 'Destination not found.' });
+  const db = await getDb();
+  const r = await db.collection('destinations').updateOne({ id: intId(req.params.id) }, { $set: {
+    name: S(b.name), country: S(b.country), emoji: S(b.emoji) || '✈️', price_from, badge: S(b.badge),
+    description: S(b.description), highlights: S(b.highlights), gallery: S(b.gallery), duration: S(b.duration),
+    best_time: S(b.best_time), image_file: S(b.image_file), itinerary: S(b.itinerary),
+    active: b.active !== undefined ? (b.active ? 1 : 0) : 1 } });
+  if (!r.matchedCount) return res.status(404).json({ error: 'Destination not found.' });
   res.json({ success: true });
-});
+}));
 
 // DELETE /api/destinations/:id — admin (soft delete, same pattern as packages)
-router.delete('/destinations/:id', requireAdmin, (req, res) => {
-  db.prepare('UPDATE destinations SET active=0 WHERE id=?').run(req.params.id);
+router.delete('/destinations/:id', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  await db.collection('destinations').updateOne({ id: intId(req.params.id) }, { $set: { active: 0 } });
   res.json({ success: true });
-});
+}));
 
 // GET /api/packages/:id — public (single package, for the package detail page)
-// Registered after all /destinations routes above so "destinations" is never
-// swallowed by this :id wildcard.
-router.get('/:id(\\d+)', (req, res) => {
-  const pkg = db.prepare('SELECT * FROM packages WHERE id=? AND active=1').get(req.params.id);
+router.get('/:id(\\d+)', ah(async (req, res) => {
+  const db = await getDb();
+  const pkg = await db.collection('packages').findOne({ id: intId(req.params.id), active: 1 }, NO_ID);
   if (!pkg) return res.status(404).json({ error: 'Package not found.' });
   res.json(pkg);
-});
+}));
 
 // POST /api/packages — admin
-router.post('/', requireAdmin, (req, res) => {
+router.post('/', requireAdmin, ah(async (req, res) => {
   const b = req.body, price = N(b.price);
   if (!S(b.name) || !(price > 0)) return res.status(400).json({ error: 'Name and a valid price are required.' });
-  const r = db.prepare(`
-    INSERT INTO packages (name,tier,description,price,duration,includes,image_file,highlights,itinerary,best_time,map_query)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
-  `).run(S(b.name), TIERS.includes(b.tier)?b.tier:'starter', S(b.description), price, S(b.duration), S(b.includes), S(b.image_file), S(b.highlights), S(b.itinerary), S(b.best_time), S(b.map_query));
-  res.json({ success: true, id: r.lastInsertRowid });
-});
+  const db = await getDb();
+  const id = await nextId('packages');
+  await db.collection('packages').insertOne({
+    id, name: S(b.name), tier: TIERS.includes(b.tier) ? b.tier : 'starter', description: S(b.description), price,
+    duration: S(b.duration), includes: S(b.includes), image_file: S(b.image_file), highlights: S(b.highlights),
+    itinerary: S(b.itinerary), best_time: S(b.best_time), map_query: S(b.map_query), active: 1 });
+  res.json({ success: true, id });
+}));
 
 // PUT /api/packages/:id — admin
-router.put('/:id', requireAdmin, (req, res) => {
+router.put('/:id', requireAdmin, ah(async (req, res) => {
   const b = req.body, price = N(b.price);
   if (!S(b.name) || !(price > 0)) return res.status(400).json({ error: 'Name and a valid price are required.' });
-  const r = db.prepare(`
-    UPDATE packages SET name=?,tier=?,description=?,price=?,duration=?,includes=?,active=?,image_file=?,highlights=?,itinerary=?,best_time=?,map_query=?
-    WHERE id=?
-  `).run(S(b.name), TIERS.includes(b.tier)?b.tier:'starter', S(b.description), price, S(b.duration), S(b.includes), b.active!==undefined?(b.active?1:0):1, S(b.image_file), S(b.highlights), S(b.itinerary), S(b.best_time), S(b.map_query), req.params.id);
-  if (!r.changes) return res.status(404).json({ error: 'Package not found.' });
+  const db = await getDb();
+  const r = await db.collection('packages').updateOne({ id: intId(req.params.id) }, { $set: {
+    name: S(b.name), tier: TIERS.includes(b.tier) ? b.tier : 'starter', description: S(b.description), price,
+    duration: S(b.duration), includes: S(b.includes), active: b.active !== undefined ? (b.active ? 1 : 0) : 1,
+    image_file: S(b.image_file), highlights: S(b.highlights), itinerary: S(b.itinerary),
+    best_time: S(b.best_time), map_query: S(b.map_query) } });
+  if (!r.matchedCount) return res.status(404).json({ error: 'Package not found.' });
   res.json({ success: true });
-});
+}));
 
 // DELETE /api/packages/:id — admin
-router.delete('/:id', requireAdmin, (req, res) => {
-  db.prepare('UPDATE packages SET active=0 WHERE id=?').run(req.params.id);
+router.delete('/:id', requireAdmin, ah(async (req, res) => {
+  const db = await getDb();
+  await db.collection('packages').updateOne({ id: intId(req.params.id) }, { $set: { active: 0 } });
   res.json({ success: true });
-});
+}));
 
 module.exports = router;

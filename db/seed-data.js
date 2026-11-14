@@ -1,160 +1,28 @@
-// db/database.js — SQLite database setup
-const Database = require('better-sqlite3');
-const bcrypt = require('bcryptjs');
-const path = require('path');
-const fs = require('fs');
+// db/seed-data.js — starter content (copied from the original SQLite seed)
+const seedPackages = [
+  ['Honey Starter',   'starter',   'Perfect for first-time travellers. Clean, simple, sweet.',              34999,  '3-5 Days',  'Return flights,3-star hotel,Airport transfers,Guided city tour,Travel insurance'],
+  ['Worker Bee',      'starter',   'Budget-smart city breaks for travellers who move fast and pack light.', 24999,  '2-4 Days',  'Return flights,Budget hotel,Airport transfers,Self-guided city map,Travel insurance'],
+  ['Queen Bee',       'premium',   'The complete experience with personal travel concierge.',               89999,  '7-10 Days', 'Business class flights,5-star hotel + breakfast,Private transfers,5 guided excursions,Personal concierge,Premium insurance'],
+  ['Royal Jelly',     'premium',   'Our top-tier luxury escape — private villas and bespoke everything.',   149999, '10-14 Days','First class flights,Private villa or suite,Chauffeur-driven transfers,Michelin-recommended dining,24/7 personal concierge,Spa credits,Premium insurance'],
+  ['Wild Nectar',     'adventure', 'Off-the-beaten-path adventures for bold explorers.',                    59999,  '5-8 Days',  'Eco-lodge stay,Adventure activity passes,Native local guide,Sustainable travel credits,Gear & kit rental'],
+  ['Swarm Trail',     'adventure', 'Multi-country backpacking trail for groups who love the outdoors.',     69999,  '9-12 Days', 'Hostel & eco-lodge mix,Multi-country rail passes,Trekking guide,Group gear rental,Adventure sports pass,Travel insurance'],
+  ['Honeymoon Hive',  'premium',   'Romance-first itineraries for newlyweds and anniversary trips.',        109999, '6-9 Days',  'Business class flights,5-star honeymoon suite,Candlelit private dinner,Couples spa session,Private excursions,Premium insurance'],
+  ['Family Comb',     'starter',   'Kid-friendly pacing, family rooms and activities for every age.',       79999,  '6-8 Days',  'Return flights (family fares),Family-size rooms,Kid-friendly excursions,Airport transfers,Travel insurance for all'],
+];
 
-// DATA_DIR lets a host (Render disk, Railway volume) keep the DB on persistent storage.
-const DATA_DIR = process.env.DATA_DIR || __dirname;
-fs.mkdirSync(DATA_DIR, { recursive: true });
-const DB_PATH = path.join(DATA_DIR, 'travelbeey.db');
-const db = new Database(DB_PATH);
+const seedDestinations = [
+  ['Jaipur',             'Rajasthan',        '🏰', 12999, 'Best Seller'],
+  ['Udaipur',            'Rajasthan',        '🛶', 14999, 'Honeymoon'],
+  ['Leh-Ladakh',         'Ladakh',           '🏔️', 24999, 'Adventure'],
+  ['Rishikesh',          'Uttarakhand',      '🧘', 8999,  'Adventure'],
+  ['Varanasi',           'Uttar Pradesh',    '🛕', 9999,  'Popular'],
+  ['Kerala Backwaters',  'Kerala',           '🌴', 15999, 'Honeymoon'],
+  ['Goa',                'Goa',              '🏖️', 10999, 'Best Seller'],
+  ['Hampi',              'Karnataka',        '🏛️', 8999,  'New'],
+  ['Darjeeling',         'West Bengal',      '🍃', 11999, 'New'],
+  ['Andaman Islands',    'Andaman & Nicobar','🏝️', 21999, 'Bucket List'],
+];
 
-// Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-// ── CREATE TABLES ──────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    email       TEXT    NOT NULL UNIQUE,
-    password    TEXT    NOT NULL,
-    phone       TEXT,
-    role        TEXT    NOT NULL DEFAULT 'user',
-    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS packages (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    tier        TEXT    NOT NULL,
-    description TEXT,
-    price       REAL    NOT NULL,
-    duration    TEXT,
-    includes    TEXT,
-    active      INTEGER NOT NULL DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS destinations (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    country     TEXT    NOT NULL,
-    emoji       TEXT,
-    price_from  REAL    NOT NULL,
-    badge       TEXT,
-    active      INTEGER NOT NULL DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS bookings (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    ref           TEXT    NOT NULL UNIQUE,
-    user_id       INTEGER REFERENCES users(id),
-    guest_name    TEXT    NOT NULL,
-    guest_email   TEXT    NOT NULL,
-    guest_phone   TEXT    NOT NULL,
-    destination   TEXT    NOT NULL,
-    package_id    INTEGER REFERENCES packages(id),
-    package_name  TEXT    NOT NULL,
-    travel_date   TEXT    NOT NULL,
-    travellers    TEXT    NOT NULL,
-    total_price   REAL,
-    status        TEXT    NOT NULL DEFAULT 'pending',
-    notes         TEXT,
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS contacts (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT NOT NULL,
-    email      TEXT NOT NULL,
-    message    TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// ── MIGRATE: rich content columns for destination explore pages ─
-const destCols = db.prepare("PRAGMA table_info(destinations)").all().map(c => c.name);
-const addDestCol = (col, def) => { if (!destCols.includes(col)) db.exec(`ALTER TABLE destinations ADD COLUMN ${col} ${def}`); };
-addDestCol('description', 'TEXT');
-addDestCol('highlights',  'TEXT'); // pipe-separated
-addDestCol('gallery',     'TEXT'); // pipe-separated emoji
-addDestCol('duration',    'TEXT');
-addDestCol('best_time',   'TEXT');
-addDestCol('image_file',  'TEXT'); // Wikimedia Commons file title, rendered at multiple sizes client-side
-addDestCol('itinerary',   'TEXT'); // day-by-day plan — days separated by "||", each day is "Title::Description"
-
-// ── MIGRATE: same rich-content columns for package detail pages ─
-// Packages already had description/duration; this adds the same
-// image/highlights/itinerary/map fields destinations have, so a package can
-// get its own Kesari-style detail page (hero photo, day-by-day itinerary,
-// embedded map) instead of being just a price-tier card.
-const pkgCols = db.prepare("PRAGMA table_info(packages)").all().map(c => c.name);
-const addPkgCol = (col, def) => { if (!pkgCols.includes(col)) db.exec(`ALTER TABLE packages ADD COLUMN ${col} ${def}`); };
-addPkgCol('image_file', 'TEXT'); // local upload path or legacy Wikimedia Commons file title
-addPkgCol('highlights', 'TEXT'); // pipe-separated
-addPkgCol('itinerary',  'TEXT'); // day-by-day plan — days separated by "||", each day is "Title::Description"
-addPkgCol('best_time',  'TEXT');
-addPkgCol('map_query',  'TEXT'); // free-text location fed to the embedded Google Map, e.g. "Puri, Odisha, India"
-
-// ── MIGRATE: booking detail columns (adults / children / departure city) ──
-// total_price is now computed server-side from these, so the DB always holds
-// the real amount and not just the per-person package price.
-const bkCols = db.prepare("PRAGMA table_info(bookings)").all().map(c => c.name);
-const addBkCol = (col, def) => { if (!bkCols.includes(col)) db.exec(`ALTER TABLE bookings ADD COLUMN ${col} ${def}`); };
-addBkCol('adults',     'INTEGER NOT NULL DEFAULT 1');
-addBkCol('children',   'INTEGER NOT NULL DEFAULT 0');
-addBkCol('from_city',  'TEXT');
-addBkCol('updated_at', 'TEXT');
-
-// ── MIGRATE: contact enquiries + newsletter + persistent sessions ─
-const ctCols = db.prepare("PRAGMA table_info(contacts)").all().map(c => c.name);
-const addCtCol = (col, def) => { if (!ctCols.includes(col)) db.exec(`ALTER TABLE contacts ADD COLUMN ${col} ${def}`); };
-addCtCol('phone',   'TEXT');
-addCtCol('subject', 'TEXT');
-addCtCol('status',  "TEXT NOT NULL DEFAULT 'new'");
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS subscribers (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    email      TEXT NOT NULL UNIQUE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  -- express-session store: logins survive server restarts / redeploys
-  CREATE TABLE IF NOT EXISTS sessions (
-    sid     TEXT PRIMARY KEY,
-    sess    TEXT NOT NULL,
-    expires INTEGER NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_bookings_user   ON bookings(user_id);
-  CREATE INDEX IF NOT EXISTS idx_bookings_email  ON bookings(guest_email);
-  CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
-  CREATE INDEX IF NOT EXISTS idx_sessions_exp    ON sessions(expires);
-`);
-
-// ── SEED DATA ──────────────────────────────────────────────────
-const seedPackages = db.prepare('SELECT COUNT(*) as c FROM packages').get();
-if (seedPackages.c === 0) {
-  const insertPkg = db.prepare(`
-    INSERT INTO packages (name, tier, description, price, duration, includes)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  insertPkg.run('Honey Starter',   'starter',   'Perfect for first-time travellers. Clean, simple, sweet.',              34999,  '3-5 Days',  'Return flights,3-star hotel,Airport transfers,Guided city tour,Travel insurance');
-  insertPkg.run('Worker Bee',      'starter',   'Budget-smart city breaks for travellers who move fast and pack light.', 24999,  '2-4 Days',  'Return flights,Budget hotel,Airport transfers,Self-guided city map,Travel insurance');
-  insertPkg.run('Queen Bee',       'premium',   'The complete experience with personal travel concierge.',               89999,  '7-10 Days', 'Business class flights,5-star hotel + breakfast,Private transfers,5 guided excursions,Personal concierge,Premium insurance');
-  insertPkg.run('Royal Jelly',     'premium',   'Our top-tier luxury escape — private villas and bespoke everything.',   149999, '10-14 Days','First class flights,Private villa or suite,Chauffeur-driven transfers,Michelin-recommended dining,24/7 personal concierge,Spa credits,Premium insurance');
-  insertPkg.run('Wild Nectar',     'adventure', 'Off-the-beaten-path adventures for bold explorers.',                    59999,  '5-8 Days',  'Eco-lodge stay,Adventure activity passes,Native local guide,Sustainable travel credits,Gear & kit rental');
-  insertPkg.run('Swarm Trail',     'adventure', 'Multi-country backpacking trail for groups who love the outdoors.',     69999,  '9-12 Days', 'Hostel & eco-lodge mix,Multi-country rail passes,Trekking guide,Group gear rental,Adventure sports pass,Travel insurance');
-  insertPkg.run('Honeymoon Hive',  'premium',   'Romance-first itineraries for newlyweds and anniversary trips.',        109999, '6-9 Days',  'Business class flights,5-star honeymoon suite,Candlelit private dinner,Couples spa session,Private excursions,Premium insurance');
-  insertPkg.run('Family Comb',     'starter',   'Kid-friendly pacing, family rooms and activities for every age.',       79999,  '6-8 Days',  'Return flights (family fares),Family-size rooms,Kid-friendly excursions,Airport transfers,Travel insurance for all');
-}
-
-// Backfill rich detail-page content (photo, highlights, itinerary, map) for
-// packages that don't have it yet — same idea as the destinations backfill
-// below, so upgrading an existing DB still gets example content to preview.
 const pkgDetails = {
   'Honey Starter': {
     image_file: 'Hawa Mahal 2011.jpg',
@@ -185,29 +53,7 @@ Object.assign(pkgDetails, {
   'Family Comb':    { image_file: 'Goa beautiful beach.JPG', best_time: 'Nov – Feb', map_query: 'Goa, India',
     highlights: 'Family-size rooms|Kid-friendly excursions|Beach days at Baga & Palolem|Airport transfers included', itinerary: '' },
 });
-const updPkg = db.prepare("UPDATE packages SET image_file=?, highlights=?, itinerary=?, best_time=?, map_query=? WHERE name=? AND (image_file IS NULL OR image_file = '')");
-for (const [name, d] of Object.entries(pkgDetails)) {
-  updPkg.run(d.image_file, d.highlights, d.itinerary, d.best_time, d.map_query, name);
-}
 
-const seedDest = db.prepare('SELECT COUNT(*) as c FROM destinations').get();
-if (seedDest.c === 0) {
-  const insertDest = db.prepare(`
-    INSERT INTO destinations (name, country, emoji, price_from, badge) VALUES (?, ?, ?, ?, ?)
-  `);
-  insertDest.run('Jaipur',             'Rajasthan',        '🏰', 12999, 'Best Seller');
-  insertDest.run('Udaipur',            'Rajasthan',        '🛶', 14999, 'Honeymoon');
-  insertDest.run('Leh-Ladakh',         'Ladakh',           '🏔️', 24999, 'Adventure');
-  insertDest.run('Rishikesh',          'Uttarakhand',      '🧘', 8999,  'Adventure');
-  insertDest.run('Varanasi',           'Uttar Pradesh',    '🛕', 9999,  'Popular');
-  insertDest.run('Kerala Backwaters',  'Kerala',           '🌴', 15999, 'Honeymoon');
-  insertDest.run('Goa',                'Goa',              '🏖️', 10999, 'Best Seller');
-  insertDest.run('Hampi',              'Karnataka',        '🏛️', 8999,  'New');
-  insertDest.run('Darjeeling',         'West Bengal',      '🍃', 11999, 'New');
-  insertDest.run('Andaman Islands',    'Andaman & Nicobar','🏝️', 21999, 'Bucket List');
-}
-
-// Backfill rich explore-page content for destinations that don't have it yet
 const destDetails = {
   'Jaipur':      { description: "Rajasthan's Pink City, where sandstone forts and mirror-worked palaces rise above bazaars selling block-print textiles, gemstones and puppets. A living capital of Rajput history and craft.", highlights: "Hawa Mahal at sunrise|Amber Fort elephant gate|City Palace museum|Johari Bazaar shopping", gallery: "🏰|🐘|💎|🧵", duration: "3-4 Days", best_time: "Oct – Mar", image_file: "Hawa Mahal 2011.jpg",
     itinerary: "Day 1: Arrive in Jaipur::Land or arrive by train, check in and an evening stroll through the Old City bazaars.||Day 2: Amber Fort & City Palace::Morning at Amber Fort, afternoon touring the City Palace and Jantar Mantar observatory.||Day 3: Hawa Mahal & Bazaars::Photo stop at Hawa Mahal, then shopping for textiles and gemstones in Johari and Bapu Bazaar.||Day 4: Depart Jaipur::Check out and transfer to the station or airport for onward travel." },
@@ -230,31 +76,5 @@ const destDetails = {
   'Andaman Islands': { description: "A remote archipelago in the Bay of Bengal with powder-white beaches, coral reefs and dense rainforest — India's best-kept island secret.", highlights: "Radhanagar Beach sunset|Snorkelling at Elephant Beach|Cellular Jail light & sound show|Scuba diving at Havelock", gallery: "🏝️|🐠|🤿|🌅", duration: "5-6 Days", best_time: "Nov – May", image_file: "Radhanagar beach, Havelock islands, Andaman and Nicobar.JPG",
     itinerary: "Day 1: Arrive in Port Blair::Check in, evening Cellular Jail light and sound show.||Day 2: Transfer to Havelock::Ferry to Havelock Island, evening at leisure on Radhanagar Beach.||Day 3: Snorkelling & Beach Day::Snorkelling trip to Elephant Beach, afternoon free by the water.||Day 4: Scuba or Leisure::Optional scuba diving session, or a relaxed beach day.||Day 5: Return to Port Blair::Ferry back to Port Blair, visit the Anthropological Museum.||Day 6: Depart Port Blair::Transfer to the airport for your departure flight." },
 };
-const updDest = db.prepare('UPDATE destinations SET description=?, highlights=?, gallery=?, duration=?, best_time=? WHERE name=? AND description IS NULL');
-for (const [name, d] of Object.entries(destDetails)) {
-  updDest.run(d.description, d.highlights, d.gallery, d.duration, d.best_time, name);
-}
-// Backfill itinerary separately (added after the columns above already existed
-// for some installs) so upgrading an existing DB still gets day-by-day plans.
-const updItin = db.prepare("UPDATE destinations SET itinerary=? WHERE name=? AND (itinerary IS NULL OR itinerary = '')");
-for (const [name, d] of Object.entries(destDetails)) {
-  if (d.itinerary) updItin.run(d.itinerary, name);
-}
-// Backfill image_file separately so it also applies to rows that already had
-// description text (e.g. upgrading an existing DB from an older seed).
-const updImg = db.prepare("UPDATE destinations SET image_file=? WHERE name=? AND (image_file IS NULL OR image_file = '')");
-for (const [name, d] of Object.entries(destDetails)) {
-  updImg.run(d.image_file, name);
-}
 
-// Seed admin user
-const adminExists = db.prepare("SELECT id FROM users WHERE email = 'admin@travelbeey.com'").get();
-if (!adminExists) {
-  const hash = bcrypt.hashSync('Admin@1234', 10);
-  db.prepare(`
-    INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)
-  `).run('Admin', 'admin@travelbeey.com', hash, 'admin');
-  console.log('✅ Admin seeded: admin@travelbeey.com / Admin@1234');
-}
-
-module.exports = db;
+module.exports = { seedPackages, seedDestinations, pkgDetails, destDetails };

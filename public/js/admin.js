@@ -239,7 +239,7 @@ async function uploadPkgPhoto(file) {
   const dz = document.getElementById('pkg-dropzone');
   const status = document.getElementById('pkg-dz-status');
   if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', false); return; }
-  if (file.size > 8 * 1024 * 1024) { showToast('Image is larger than 8MB.', false); return; }
+  if (file.size > 4 * 1024 * 1024) { showToast('Image is larger than 4MB.', false); return; }
   dz.classList.add('dz-uploading');
   status.textContent = 'Uploading…';
   try {
@@ -413,7 +413,7 @@ async function uploadDestPhoto(file) {
   const dz = document.getElementById('dest-dropzone');
   const status = document.getElementById('dest-dz-status');
   if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', false); return; }
-  if (file.size > 8 * 1024 * 1024) { showToast('Image is larger than 8MB.', false); return; }
+  if (file.size > 4 * 1024 * 1024) { showToast('Image is larger than 4MB.', false); return; }
   dz.classList.add('dz-uploading');
   status.textContent = 'Uploading…';
   try {

@@ -1,110 +1,39 @@
-# 🐝 TravelBeey — Full Stack Tour Booking Platform
+# 🐝 TravelBeey — Tour Booking Platform
 
-Node.js + Express + SQLite full-stack web app.
+Node.js + Express + **MongoDB Atlas**. Ready to deploy on **Vercel** (or Render / run locally).
 
-## Quick Start
+## 1. MongoDB Atlas (one-time)
+1. Create a free cluster at mongodb.com/atlas.
+2. **Database Access** → add a user (username + password).
+3. **Network Access** → Add IP Address → `0.0.0.0/0` (Vercel uses changing IPs).
+4. **Connect → Drivers** → copy the connection string, e.g.
+   `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`
+   (if the password has special characters like `@ : /`, URL-encode them).
 
+## 2. Run locally
 ```bash
-# 1. Install dependencies
-npm install   # Node 22 or newer required
-
-# 2. Start the server
-npm start
-
-# 3. Open in browser
-# http://localhost:3000
+npm install
+cp .env.example .env        # then edit MONGODB_URI and SESSION_SECRET
+npm start                   # http://localhost:3000
 ```
 
-## Default Credentials
+## 3. Deploy to Vercel
+1. Push this folder to GitHub.
+2. vercel.com → Add New → Project → import the repo (leave build settings as default).
+3. Environment Variables:
+   - `MONGODB_URI` = your Atlas connection string
+   - `SESSION_SECRET` = any long random text
+   - `NODE_ENV` = `production`
+4. Deploy. Every `git push` redeploys automatically.
 
-| Role  | Email                    | Password    |
-|-------|--------------------------|-------------|
-| Admin | admin@travelbeey.com     | Admin@1234  |
+## Admin
+`/admin` — default login `admin@travelbeey.com` / `Admin@1234`. **Change it right after first login.**
+The first request to the site creates the collections, indexes, sample packages/destinations and the admin user.
 
-## What's new in this version
-- New professional storefront (MakeMyTrip/Goibibo-style): search bar, destination cards, package cards, sticky booking card with live price.
-- Everything is stored in SQLite (`db/travelbeey.db`): users, bookings, enquiries (`contacts`), newsletter `subscribers`, and login `sessions` (logins now survive restarts).
-- Booking total is calculated on the server: adults x price + children x 75% of price.
-- New pages: `/track` (guest booking lookup by reference + email), `/contact`; admin has an Enquiries tab.
+## Notes
+- Product photos uploaded in the admin panel are stored in MongoDB (max 4MB each — Vercel's request limit).
+- Sessions are stored in MongoDB, so logins work across serverless instances.
+- The login/booking rate limiter is in-memory (per serverless instance) — good basic protection, not a hard global limit.
 
-## Pages
-
-| URL          | Description                       |
-|--------------|-----------------------------------|
-| /            | Homepage with search, destinations, packages |
-| /explore?id= | Destination page + booking        |
-| /package?id= | Package page + booking            |
-| /track       | Track a booking (ref + email)     |
-| /contact     | Contact form (saved to DB)        |
-| /login       | User login                        |
-| /register    | New user registration             |
-| /dashboard   | User dashboard + my bookings      |
-| /admin       | Admin dashboard (admin only)      |
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register` — Register new user
-- `POST /api/auth/login`    — Login
-- `POST /api/auth/logout`   — Logout
-- `GET  /api/auth/me`       — Current session info
-
-### Bookings
-- `POST   /api/bookings`           — Create booking (public)
-- `GET    /api/bookings/my`        — My bookings (logged in)
-- `GET    /api/bookings`           — All bookings (admin)
-- `PATCH  /api/bookings/:id/status`— Update status (admin)
-- `DELETE /api/bookings/:id`       — Delete booking (admin)
-
-### Packages
-- `GET    /api/packages`            — All packages (public)
-- `GET    /api/packages/destinations` — All destinations (public)
-- `POST   /api/packages`            — Add package (admin)
-- `PUT    /api/packages/:id`        — Update package (admin)
-- `DELETE /api/packages/:id`        — Deactivate package (admin)
-
-### Admin
-- `GET    /api/admin/stats`         — Dashboard stats
-- `GET    /api/admin/users`         — All users
-- `PATCH  /api/admin/users/:id/role`— Change user role
-- `DELETE /api/admin/users/:id`     — Delete user
-
-## Project Structure
-
-```
-travelbeey/
-├── server.js            # Express app entry point
-├── db/
-│   └── database.js      # SQLite setup + seed data
-├── middleware/
-│   └── auth.js          # Session auth middleware
-├── routes/
-│   ├── auth.js          # Auth routes
-│   ├── bookings.js      # Booking CRUD
-│   ├── packages.js      # Packages + destinations
-│   └── admin.js         # Admin stats + users
-└── public/
-    ├── index.html       # Homepage
-    ├── login.html       # Login page
-    ├── register.html    # Register page
-    ├── dashboard.html   # User dashboard
-    ├── admin.html       # Admin dashboard
-    ├── 404.html         # 404 page
-    ├── css/
-    │   ├── main.css     # Global styles
-    │   ├── dashboard.css
-    │   └── admin.css
-    └── js/
-        ├── main.js      # Homepage logic
-        ├── auth.js      # Auth forms
-        ├── dashboard.js # User dashboard
-        └── admin.js     # Admin dashboard
-```
-
-## Production Tips
-
-- **Data persistence on Render:** the free plan has an ephemeral disk, so the DB resets on every deploy. Attach a Render Disk (paid) and set `DATA_DIR` to its mount path (e.g. `/var/data`), or move to a hosted DB.
-- Set `SESSION_SECRET` (render.yaml already generates one)
-- Set `NODE_ENV=production`
-- Use a reverse proxy (nginx) in front
-- Set up HTTPS (Let's Encrypt)
+## Structure
+`api/index.js` Vercel entry · `server.js` Express app · `db/mongo.js` connection/seed · `routes/` API · `public/` frontend

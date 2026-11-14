@@ -1,19 +1,19 @@
 {
-  "name": "travelbeey-new",
-  "version": "1.0.0",
-  "description": "TravelBeey Full Stack Tour Booking Platform",
+  "name": "travelbeey",
+  "version": "2.0.0",
+  "description": "TravelBeey Full Stack Tour Booking Platform (Express + MongoDB, deployable on Vercel)",
   "main": "server.js",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=20" },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^13.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "multer": "^2.2.0"
+    "mongodb": "^6.10.0",
+    "multer": "^2.0.2"
   }
 }

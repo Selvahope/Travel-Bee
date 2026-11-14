@@ -10,10 +10,5 @@ services:
         value: production
       - key: SESSION_SECRET
         generateValue: true
-      # For permanent data on Render, upgrade the plan, attach a disk and uncomment:
-      # - key: DATA_DIR
-      #   value: /var/data
-    # disk:
-    #   name: travelbeey-data
-    #   mountPath: /var/data
-    #   sizeGB: 1
+      - key: MONGODB_URI
+        sync: false   # paste your MongoDB Atlas connection string in the Render dashboard

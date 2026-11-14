@@ -1,44 +1,30 @@
-// db/session-store.js — express-session store backed by the same SQLite DB.
-// Replaces the default MemoryStore (which forgets every login on restart and
-// leaks memory in production).
+// db/session-store.js — express-session store backed by MongoDB (works on serverless/Vercel).
 const session = require('express-session');
-const db = require('./database');
-
-const get = db.prepare('SELECT sess FROM sessions WHERE sid = ? AND expires > ?');
-const set = db.prepare('INSERT INTO sessions (sid, sess, expires) VALUES (?, ?, ?) ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires');
-const del = db.prepare('DELETE FROM sessions WHERE sid = ?');
-const touch = db.prepare('UPDATE sessions SET expires = ? WHERE sid = ?');
-const sweep = db.prepare('DELETE FROM sessions WHERE expires <= ?');
+const { getDb } = require('./mongo');
 
 const DAY = 24 * 60 * 60 * 1000;
 
-class SqliteStore extends session.Store {
-  constructor() {
-    super();
-    sweep.run(Date.now());
-    this._timer = setInterval(() => sweep.run(Date.now()), 60 * 60 * 1000);
-    this._timer.unref();
-  }
+class MongoStore extends session.Store {
   _exp(sess) {
     const e = sess && sess.cookie && sess.cookie.expires;
-    return e ? new Date(e).getTime() : Date.now() + 7 * DAY;
+    return e ? new Date(e) : new Date(Date.now() + 7 * DAY);
   }
+  async _col() { return (await getDb()).collection('sessions'); }
   get(sid, cb) {
-    try {
-      const row = get.get(sid, Date.now());
-      cb(null, row ? JSON.parse(row.sess) : null);
-    } catch (e) { cb(e); }
+    this._col().then((c) => c.findOne({ _id: sid, expires: { $gt: new Date() } }))
+      .then((row) => cb(null, row ? JSON.parse(row.sess) : null), cb);
   }
   set(sid, sess, cb) {
-    try { set.run(sid, JSON.stringify(sess), this._exp(sess)); cb && cb(null); }
-    catch (e) { cb && cb(e); }
+    this._col().then((c) => c.updateOne({ _id: sid }, { $set: { sess: JSON.stringify(sess), expires: this._exp(sess) } }, { upsert: true }))
+      .then(() => cb && cb(null), (e) => cb && cb(e));
   }
   destroy(sid, cb) {
-    try { del.run(sid); cb && cb(null); } catch (e) { cb && cb(e); }
+    this._col().then((c) => c.deleteOne({ _id: sid })).then(() => cb && cb(null), (e) => cb && cb(e));
   }
   touch(sid, sess, cb) {
-    try { touch.run(this._exp(sess), sid); cb && cb(null); } catch (e) { cb && cb(e); }
+    this._col().then((c) => c.updateOne({ _id: sid }, { $set: { expires: this._exp(sess) } }))
+      .then(() => cb && cb(null), (e) => cb && cb(e));
   }
 }
 
-module.exports = SqliteStore;
+module.exports = MongoStore;
