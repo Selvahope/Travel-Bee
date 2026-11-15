@@ -11,7 +11,7 @@ const CITIES = ['Chennai', 'Puducherry', 'Bengaluru', 'Mumbai', 'Delhi', 'Hydera
 
 let DESTS = [], PKGS = [];
 
-$('#hero-bee').innerHTML = LOGO;
+$('#hero-bee').innerHTML = BEE;
 // hero photo (fades in over the gradient; stays gradient if offline)
 $('#hero-bg').innerHTML = img('Hawa Mahal 2011.jpg', 2000, 'Hawa Mahal, Jaipur');
 
@@ -22,7 +22,7 @@ function renderDests(region = 'all') {
       ${d.badge ? `<span class="badge">${esc(d.badge)}</span>` : ''}
       <div class="dcard-emoji" aria-hidden="true">${esc(d.emoji || '')}</div>
       ${img(d.image_file, 700, `${d.name}, ${d.country}`)}
-      <div class="dcard-b"><h3>${esc(d.name)}</h3><p>${esc(d.country)}</p><div class="pr">from ${fmt(d.price_from)} <small>/ person</small></div></div>
+      <div class="dcard-b"><h3>${esc(d.name)}</h3><p>${esc(d.country)}</p><div class="pr">from ${fmt(lowestPrice(PKGS, d.price_from))} <small>/ person</small></div></div>
     </a>`).join('');
   $('#d-empty').hidden = list.length > 0;
 }

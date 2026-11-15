@@ -2,32 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<meta name="theme-color" content="#1c1405">
+
 <title>Admin — TravelBeey</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/main.css">
-<link rel="stylesheet" href="/css/dashboard.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
 <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="dash-page">
-<div id="site-preloader" aria-hidden="true">
-  <div class="pl-mark"><span>🐝</span> Travel<em>Beey</em></div>
-  <div class="pl-bar"></div>
-  <div class="pl-pct">FINDING YOUR HIVE…</div>
-</div>
-<nav id="navbar">
-  <div class="logo"><span>🐝</span> Travel<em>Beey</em> <span class="admin-badge">ADMIN</span></div>
-  <div class="nav-actions"><span id="admin-name" style="color:rgba(255,255,255,.7);font-size:.875rem"></span><button onclick="logout()" class="btn-ghost">Logout</button></div>
-</nav>
+<header class="adm-top">
+  <a class="adm-logo" href="/admin" aria-label="TravelBeey admin"><img src="/img/logo-light-nobyline.svg" alt="TravelBeey" width="170" height="41"></a>
+  <span class="admin-badge">ADMIN</span>
+  <div class="adm-act"><span id="admin-name"></span><a class="btn btn-ghost-w adm-site" href="/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg> View site</a><button onclick="logout()" class="btn btn-ghost-w">Logout</button></div>
+</header>
 <div class="dash-layout">
   <aside class="sidebar">
-    <nav class="sidebar-nav">
-      <a href="#" class="snav active" data-tab="overview">📊 Overview</a>
-      <a href="#" class="snav" data-tab="bookings">📋 Bookings</a>
-      <a href="#" class="snav" data-tab="users">👥 Users</a>
-      <a href="#" class="snav" data-tab="packages">📦 Packages</a>
-      <a href="#" class="snav" data-tab="destinations">🗺️ Destinations</a>
-      <a href="#" class="snav" data-tab="enquiries">✉️ Enquiries</a>
-      <a href="/" class="snav">🏠 View Site</a>
+    <nav class="sidebar-nav" aria-label="Admin sections">
+      <a href="#" class="snav active" data-tab="overview"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Overview</span></a>
+      <a href="#" class="snav" data-tab="bookings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>Bookings</span></a>
+      <a href="#" class="snav" data-tab="users"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg><span>Users</span></a>
+      <a href="#" class="snav" data-tab="packages"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg><span>Packages</span></a>
+      <a href="#" class="snav" data-tab="destinations"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2ZM9 4v14M15 6v14"/></svg><span>Destinations</span></a>
+      <a href="#" class="snav" data-tab="enquiries"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span>Enquiries</span></a>
+      <a href="/" class="snav snav-site"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span>View Site</span></a>
     </nav>
   </aside>
   <main class="dash-main">
@@ -36,11 +37,11 @@
     <div class="tab-panel active" id="tab-overview">
       <div class="panel-header"><h2>Dashboard Overview</h2><p>Real-time snapshot of TravelBeey</p></div>
       <div class="stats-cards reveal-stagger" id="stat-cards">
-        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">📋</div><div class="sc-val" id="sc-total">—</div><div class="sc-label">Total Bookings</div></div>
-        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">⏳</div><div class="sc-val" id="sc-pending">—</div><div class="sc-label">Pending</div></div>
-        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">✅</div><div class="sc-val" id="sc-confirmed">—</div><div class="sc-label">Confirmed</div></div>
-        <div class="stat-card gold" data-tilt data-tilt-strength="10"><div class="sc-icon">💰</div><div class="sc-val" id="sc-revenue">—</div><div class="sc-label">Revenue (confirmed)</div></div>
-        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon">👥</div><div class="sc-val" id="sc-users">—</div><div class="sc-label">Registered Users</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></div><div class="sc-val" id="sc-total">—</div><div class="sc-label">Total Bookings</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="sc-val" id="sc-pending">—</div><div class="sc-label">Pending</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg></div><div class="sc-val" id="sc-confirmed">—</div><div class="sc-label">Confirmed</div></div>
+        <div class="stat-card gold" data-tilt data-tilt-strength="10"><div class="sc-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h10M7 9h10M10 5c4.5 0 5 5 0 5H8l7 9"/></svg></div><div class="sc-val" id="sc-revenue">—</div><div class="sc-label">Revenue (confirmed)</div></div>
+        <div class="stat-card" data-tilt data-tilt-strength="10"><div class="sc-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg></div><div class="sc-val" id="sc-users">—</div><div class="sc-label">Registered Users</div></div>
       </div>
       <div class="two-col reveal-stagger">
         <div class="panel-box" data-tilt data-tilt-strength="3"><h3>Recent Bookings</h3><div id="recent-bookings"></div></div>
@@ -77,13 +78,13 @@
 
     <!-- PACKAGES -->
     <div class="tab-panel" id="tab-packages">
-      <div class="panel-header"><h2>Packages</h2><button class="btn-primary" onclick="showAddPkg()">+ Add Package</button></div>
+      <div class="panel-header"><h2>Packages</h2><button class="btn btn-primary" onclick="showAddPkg()">+ Add Package</button></div>
       <div class="pkg-admin-grid" id="pkg-admin-grid"></div>
     </div>
 
     <!-- DESTINATIONS -->
     <div class="tab-panel" id="tab-destinations">
-      <div class="panel-header"><h2>Destinations</h2><button class="btn-primary" onclick="showAddDest()">+ Add Destination</button></div>
+      <div class="panel-header"><h2>Destinations</h2><button class="btn btn-primary" onclick="showAddDest()">+ Add Destination</button></div>
       <p style="color:var(--muted);font-size:.85rem;margin:-10px 0 18px">These are the cards shown under "Trending Destinations" on the homepage, and power each destination's explore page.</p>
       <div class="pkg-admin-grid" id="dest-admin-grid"></div>
     </div>
@@ -121,7 +122,7 @@
           <div class="dz-empty" id="pkg-dz-empty">
             <div class="dz-icon">📷</div>
             <p><strong>Drag & drop</strong> a photo here, or <span class="dz-browse">click to browse</span></p>
-            <p class="dz-hint">JPG, PNG or WEBP · up to 8MB</p>
+            <p class="dz-hint">JPG, PNG or WEBP · up to 4MB</p>
           </div>
           <input type="file" id="pkg-dz-input" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
         </div>
@@ -156,7 +157,7 @@
           <div class="dz-empty" id="dest-dz-empty">
             <div class="dz-icon">📷</div>
             <p><strong>Drag & drop</strong> a photo here, or <span class="dz-browse">click to browse</span></p>
-            <p class="dz-hint">JPG, PNG or WEBP · up to 8MB</p>
+            <p class="dz-hint">JPG, PNG or WEBP · up to 4MB</p>
           </div>
           <input type="file" id="dest-dz-input" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
         </div>
@@ -172,7 +173,7 @@
     </form>
   </div>
 </div>
-<script src="/js/anim.js" defer></script>
 <script src="/js/admin.js"></script>
+<script src="/js/admin-mobile.js"></script>
 </body>
 </html>

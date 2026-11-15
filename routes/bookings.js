@@ -58,7 +58,8 @@ router.post('/', rateLimit(15, 10 * 60 * 1000), ah(async (req, res) => {
   const pkg = await db.collection('packages').findOne({ id: intId(b.package_id), active: 1 });
   if (!pkg) return res.status(404).json({ error: 'That package is no longer available.' });
 
-  const total = Math.round(pkg.price * (adults + children * CHILD_RATE));
+  // whole-rupee unit prices (same as the booking card in public/js/site.js) so the shown lines add up to the total
+  const total = Math.round(pkg.price) * adults + Math.round(pkg.price * CHILD_RATE) * children;
   const ref = genRef();
   const id = await nextId('bookings');
   const ts = now();

@@ -16,8 +16,9 @@ function notFound(what) {
 
   const hl = (d.highlights || '').split('|').filter(Boolean);
   const itin = days(d.itinerary);
-  const nameKey = d.name.split(/[ -]/)[0].toLowerCase();
-  const suggested = packages.find(p => (p.map_query || '').toLowerCase().includes(nameKey)) || packages.find(p => p.tier === 'starter') || packages[0];
+    const suggested = packages.filter(p => +p.price > 0).sort((a, b) => a.price - b.price)[0] || packages[0];
+  // const nameKey = d.name.split(/[ -]/)[0].toLowerCase();
+  // const suggested = packages.find(p => (p.map_query || '').toLowerCase().includes(nameKey)) || packages.find(p => p.tier === 'starter') || packages[0];
 
   $('#root').innerHTML = `
   <section class="dhero">
@@ -28,8 +29,8 @@ function notFound(what) {
       <p class="tag">${esc(d.description || d.country)}</p>
       <div class="facts">
         <div class="fact">${icon('pin')}<div><small>State</small>${esc(d.country)}</div></div>
-        <div class="fact">${icon('tag')}<div><small>Trips from</small>${fmt(d.price_from)} / person</div></div>
-        ${d.duration ? `<div class="fact">${icon('clock')}<div><small>Suggested stay</small>${esc(d.duration)}</div></div>` : ''}
+        <div class="fact">${icon('tag')}<div><small>Trips from</small>${fmt(lowestPrice(packages, d.price_from))} / person</div></div>
+        ${d.duration ? `<div class="fact">${icon('clock')}<div><small>Suggested stay</small>${esc(tidy(d.duration))}</div></div>` : ''}
         ${d.best_time ? `<div class="fact">${icon('sun')}<div><small>Best time</small>${esc(d.best_time)}</div></div>` : ''}
       </div>
     </div>
