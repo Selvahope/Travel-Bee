@@ -475,3 +475,58 @@ body{overflow-x:clip}
   .fld input,.fld select{min-height:46px}
 }
 @media print{.hdr,.ftr,.bk-fab,.toast{display:none!important}}
+
+/* ═══ Rails v3 — contained grid pages: 2 rows × 4 columns; extra items become more pages that scroll sideways ═══ */
+.rail{position:relative;--rows:2;--cols:4;--rg:18px}
+.rail .dgrid,.rail .pgrid{display:grid;grid-template-columns:none;grid-template-rows:repeat(var(--rows),auto);grid-auto-flow:column;
+  grid-auto-columns:calc((100% - (var(--cols) - 1) * var(--rg)) / var(--cols));gap:var(--rg);
+  overflow-x:auto;overflow-y:hidden;padding:10px 6px 14px;margin:-10px -6px -4px;          /* 6px of room so card shadows are not clipped */
+  scroll-snap-type:x proximity;scroll-padding-inline:6px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline-offset:-4px}
+.rail .dgrid::-webkit-scrollbar,.rail .pgrid::-webkit-scrollbar{display:none}
+.rail .dgrid>*,.rail .pgrid>*{scroll-snap-align:start;min-width:0}
+.rail .dcard{aspect-ratio:1/1.06}
+.rail .pcard{height:auto}
+.rail .pbody p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rail .pinc span:nth-child(n+4){display:none}
+.rail .fine{grid-column:1/-1}
+.rail-foot{display:flex;align-items:center;gap:22px;margin-top:10px}
+.rail-progress{position:relative;flex:1;height:4px;border-radius:99px;background:#f0e4bd;overflow:hidden}
+.rail-progress i{position:absolute;top:0;bottom:0;left:0;width:30%;border-radius:99px;background:var(--honey);transition:left .15s linear,width .2s}
+.rail-ctl{display:flex;gap:8px;flex:none}
+.rail-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--ink);border:1.5px solid var(--line);
+  box-shadow:var(--sh);transition:background .15s,border-color .15s,transform .15s,opacity .15s}
+.rail-btn:hover:not(:disabled){background:var(--honey);border-color:var(--honey)}
+.rail-btn:active:not(:disabled){transform:scale(.93)}
+.rail-btn:disabled{opacity:.35;cursor:default;box-shadow:none}
+.rail-btn .icon{width:20px;height:20px;stroke-width:2.4}
+.rail-play[aria-pressed="true"] .icon path{fill:currentColor}
+.rail-play[hidden]{display:none}
+.rail.no-scroll .rail-foot{display:none}            /* everything fits on one page: no controls needed */
+
+/* destination card polish */
+.dcard{border-radius:20px}
+.dcard::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);z-index:3;pointer-events:none}
+.dcard-b{padding:18px}
+.dcard-b h3{font-size:1.22rem;letter-spacing:-.01em}
+.dcard-b .pr{display:inline-flex;align-items:baseline;gap:5px;margin-top:10px;padding:6px 13px;border-radius:99px;background:var(--honey);color:#2a1a00;font-size:.84rem;font-weight:800}
+.dcard-b .pr small{color:#5c3f00;opacity:1;font-weight:700}
+.dcard-go{position:absolute;right:14px;bottom:16px;z-index:3;width:40px;height:40px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;
+  opacity:0;transform:translateY(8px) scale(.9);transition:opacity .25s,transform .25s;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.dcard-go .icon{width:20px;height:20px;stroke-width:2.4}
+.dcard:hover .dcard-go,.dcard:focus-visible .dcard-go{opacity:1;transform:none}
+
+@media(max-width:1000px){.rail{--cols:3}}
+@media(max-width:700px){
+  .rail{--rg:12px}
+  #destinations .rail{--cols:2}                       /* phone: 2 × 2 destinations per page */
+  #packages .rail{--rows:1;--cols:1}                  /* phone: one package per page, swipe for the next */
+  .rail .dcard{aspect-ratio:4/5}
+  .dcard-b{padding:12px}
+  .dcard-b h3{font-size:1rem}
+  .dcard-b p{font-size:.76rem}
+  .dcard-b .pr{padding:4px 10px;font-size:.74rem;margin-top:8px}
+  .dcard-emoji{font-size:3rem}
+  .rail-btn[data-a="prev"],.rail-btn[data-a="next"]{display:none}   /* phones swipe instead */
+  .dcard-go{display:none}
+}
+@media(hover:none){.dcard-go{display:none}}

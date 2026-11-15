@@ -11,6 +11,84 @@ const CITIES = ['Chennai', 'Puducherry', 'Bengaluru', 'Mumbai', 'Delhi', 'Hydera
 
 let DESTS = [], PKGS = [];
 
+// ── Horizontal "rails": destinations and packages scroll sideways, so adding more never makes the page taller.
+// Each row is a grid of 2 rows × 4 columns; extra items become more pages. They auto-advance one page at a time. Auto-scroll pauses on hover/focus/touch, while off-screen or in a background tab,
+// and has a pause button. Arrow buttons (desktop), swipe (phones) and the arrow keys all work too.
+function initRail(track, label, { every = 4500 } = {}) {
+  const rail = document.createElement('div'); rail.className = 'rail';
+  track.parentNode.insertBefore(rail, track); rail.appendChild(track);
+  track.tabIndex = 0; track.setAttribute('role', 'region'); track.setAttribute('aria-label', label);
+
+  const foot = document.createElement('div'); foot.className = 'rail-foot';
+  foot.innerHTML = `<div class="rail-progress" aria-hidden="true"><i></i></div>
+    <div class="rail-ctl">
+      <button type="button" class="rail-btn" data-a="prev" aria-label="Previous: ${label}">${icon('left')}</button>
+      <button type="button" class="rail-btn" data-a="next" aria-label="Next: ${label}">${icon('right')}</button>
+      <button type="button" class="rail-btn rail-play" data-a="play" aria-label="Pause auto-scroll" aria-pressed="false">${icon('pause')}</button>
+    </div>`;
+  rail.appendChild(foot);
+  const bar = foot.querySelector('.rail-progress i'), prev = foot.querySelector('[data-a=prev]'),
+        next = foot.querySelector('[data-a=next]'), play = foot.querySelector('[data-a=play]');
+
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let paused = reduce, hover = false, inView = false, idleUntil = 0;
+  if (reduce) play.hidden = true;
+  const userTouched = () => { idleUntil = Date.now() + 9000; };      // give the visitor 9s of peace after any interaction
+  const maxLeft = () => track.scrollWidth - track.clientWidth;
+  const cssInt = (name) => parseInt(getComputedStyle(track).getPropertyValue(name), 10) || 1;
+  // one "page" = the visible columns (4 on desktop, 3 on tablets, 2 on phones)
+  const pageStep = () => {
+    const card = track.firstElementChild;
+    if (!card || card.classList.contains('fine')) return 0;
+    return cssInt('--cols') * (card.getBoundingClientRect().width + (parseFloat(getComputedStyle(track).columnGap) || 16));
+  };
+  // Place every card in an explicit row/column so each page reads left→right, top→bottom, even when the last page is only partly full.
+  const layout = () => {
+    const cols = cssInt('--cols'), rows = cssInt('--rows'), per = cols * rows;
+    [...track.children].forEach((el, i) => {
+      if (el.classList.contains('fine')) return;
+      const page = Math.floor(i / per), j = i % per;
+      el.style.gridColumn = String(page * cols + (j % cols) + 1);
+      el.style.gridRow = String(Math.floor(j / cols) + 1);
+    });
+  };
+
+  const update = () => {
+    const max = maxLeft(), left = track.scrollLeft;
+    prev.disabled = left <= 2; next.disabled = left >= max - 2;
+    rail.classList.toggle('no-scroll', max <= 2);
+    const w = Math.max(14, Math.min(100, (track.clientWidth / track.scrollWidth) * 100));
+    bar.style.width = w + '%';
+    bar.style.left = (max > 2 ? (left / max) * (100 - w) : 0) + '%';
+  };
+  track.addEventListener('scroll', update, { passive: true });
+  const relayout = () => { layout(); update(); };
+  if ('ResizeObserver' in window) new ResizeObserver(relayout).observe(track); else window.addEventListener('resize', relayout);
+
+  prev.addEventListener('click', () => { userTouched(); track.scrollBy({ left: -pageStep(), behavior: 'smooth' }); });
+  next.addEventListener('click', () => { userTouched(); track.scrollBy({ left: pageStep(), behavior: 'smooth' }); });
+  play.addEventListener('click', () => {
+    paused = !paused;
+    play.setAttribute('aria-pressed', paused); play.setAttribute('aria-label', paused ? 'Play auto-scroll' : 'Pause auto-scroll');
+    play.innerHTML = icon(paused ? 'play' : 'pause');
+  });
+  ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(ev => track.addEventListener(ev, userTouched, { passive: true }));
+  rail.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') hover = true; });
+  rail.addEventListener('pointerleave', () => { hover = false; });
+  rail.addEventListener('focusin', () => { hover = true; });
+  rail.addEventListener('focusout', () => { hover = false; });
+  if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { inView = e.isIntersecting; }, { threshold: 0.35 }).observe(rail); else inView = true;
+
+  setInterval(() => {
+    if (paused || hover || !inView || document.hidden || Date.now() < idleUntil || maxLeft() <= 2) return;
+    if (track.scrollLeft >= maxLeft() - 4) track.scrollTo({ left: 0, behavior: 'smooth' });   // loop back to the start
+    else track.scrollBy({ left: pageStep(), behavior: 'smooth' });
+  }, every);
+
+  return { update: () => requestAnimationFrame(update), reset: () => { layout(); track.scrollLeft = 0; requestAnimationFrame(update); } };
+}
+const dRail = initRail($('#dgrid'), 'Popular destinations', { every: 5000 }), pRail = initRail($('#pgrid'), 'Holiday packages', { every: 6500 });
+
 $('#hero-bee').innerHTML = BEE;
 // hero photo (fades in over the gradient; stays gradient if offline)
 $('#hero-bg').innerHTML = img('Hawa Mahal 2011.jpg', 2000, 'Hawa Mahal, Jaipur');
@@ -22,9 +100,11 @@ function renderDests(region = 'all') {
       ${d.badge ? `<span class="badge">${esc(d.badge)}</span>` : ''}
       <div class="dcard-emoji" aria-hidden="true">${esc(d.emoji || '')}</div>
       ${img(d.image_file, 700, `${d.name}, ${d.country}`)}
+      <span class="dcard-go" aria-hidden="true">${icon('right')}</span>
       <div class="dcard-b"><h3>${esc(d.name)}</h3><p>${esc(d.country)}</p><div class="pr">from ${fmt(lowestPrice(PKGS, d.price_from))} <small>/ person</small></div></div>
     </a>`).join('');
   $('#d-empty').hidden = list.length > 0;
+  dRail.reset();
 }
 
 function renderPkgs(tier = 'all') {
@@ -38,6 +118,7 @@ function renderPkgs(tier = 'all') {
         <div class="pfoot"><div class="price"><small>from, per adult</small>${fmt(p.price)}</div><span class="btn btn-primary">View details</span></div>
       </div></a>`;
   }).join('') || '<p class="fine">No packages in this category yet.</p>';
+  pRail.reset();
 }
 
 $('#region-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $$('#region-seg button').forEach(x => x.classList.toggle('on', x === b)); renderDests(b.dataset.r); });

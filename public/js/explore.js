@@ -16,9 +16,9 @@ function notFound(what) {
 
   const hl = (d.highlights || '').split('|').filter(Boolean);
   const itin = days(d.itinerary);
-    const suggested = packages.filter(p => +p.price > 0).sort((a, b) => a.price - b.price)[0] || packages[0];
-  // const nameKey = d.name.split(/[ -]/)[0].toLowerCase();
-  // const suggested = packages.find(p => (p.map_query || '').toLowerCase().includes(nameKey)) || packages.find(p => p.tier === 'starter') || packages[0];
+  // The booking card opens on the cheapest package, so it always matches the "Trips from" price in the hero.
+  // (Travellers can still pick any other package from the dropdown.)
+  const suggested = packages.filter(p => +p.price > 0).sort((a, b) => a.price - b.price)[0] || packages[0];
 
   $('#root').innerHTML = `
   <section class="dhero">
