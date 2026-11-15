@@ -33,7 +33,7 @@ function initRail(track, label, { every = 4500 } = {}) {
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let paused = reduce, hover = false, inView = false, idleUntil = 0;
   if (reduce) play.hidden = true;
-  const userTouched = () => { idleUntil = Date.now() + 9000; };      // give the visitor 9s of peace after any interaction
+  const userTouched = () => { idleUntil = Date.now() + 5000; };      // give the visitor 5s of peace after any interaction
   const maxLeft = () => track.scrollWidth - track.clientWidth;
   const cssInt = (name) => parseInt(getComputedStyle(track).getPropertyValue(name), 10) || 1;
   // one "page" = the visible columns (4 on desktop, 3 on tablets, 2 on phones)
@@ -87,7 +87,7 @@ function initRail(track, label, { every = 4500 } = {}) {
 
   return { update: () => requestAnimationFrame(update), reset: () => { layout(); track.scrollLeft = 0; requestAnimationFrame(update); } };
 }
-const dRail = initRail($('#dgrid'), 'Popular destinations', { every: 5000 }), pRail = initRail($('#pgrid'), 'Holiday packages', { every: 6500 });
+const dRail = initRail($('#dgrid'), 'Popular destinations', { every: 2000 }), pRail = initRail($('#pgrid'), 'Holiday packages', { every: 2500 });
 
 $('#hero-bee').innerHTML = BEE;
 // hero photo (fades in over the gradient; stays gradient if offline)
